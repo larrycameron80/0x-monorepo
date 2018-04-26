@@ -19,12 +19,12 @@
 pragma solidity ^0.4.21;
 pragma experimental ABIEncoderV2;
 
-contract LibErrors {
+contract LibOrderStatus {
 
-    // Error Codes
-    enum Errors {
+    // Order Status Codes
+    enum OrderStatus {
         INVALID,                           // The first (default) value is invalid
-        SUCCESS,                           // Operation executed normaly
+        SUCCESS,                           // Operation executed normally
         ORDER_INVALID,                     // Order is invalid
         ORDER_SIGNATURE_INVALID,           // Signature invalid
         ORDER_SENDER_INVALID,              // Sender invalid
@@ -36,12 +36,13 @@ contract LibErrors {
         INSUFFICIENT_BALANCE_OR_ALLOWANCE  // Insufficient balance or allowance for token transfer
     }
 
-    event ExchangeError(uint8 indexed errorId, bytes32 indexed orderHash);
+    event ExchangeOrderStatus(uint8 indexed orderStatusId, bytes32 indexed orderHash);
 
-    function isValidOrderStatus(Errors status) internal pure returns (bool) {
-        if (status == Errors.ORDER_INVALID) return false;
-        if (status == Errors.ORDER_SENDER_INVALID) return false;
-        if (status == Errors.ORDER_SIGNATURE_INVALID) return false;
+
+    function isValidOrderStatus(OrderStatus status) internal pure returns (bool) {
+        if (status == OrderStatus.ORDER_INVALID) return false;
+        if (status == OrderStatus.ORDER_SENDER_INVALID) return false;
+        if (status == OrderStatus.ORDER_SIGNATURE_INVALID) return false;
         return true;
     }
 }

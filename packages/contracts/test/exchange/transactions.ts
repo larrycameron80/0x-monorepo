@@ -20,7 +20,7 @@ import {
     AssetProxyId,
     ContractName,
     ERC20BalancesByOwner,
-    ExchangeContractErrs,
+    ExchangeContractOrderStatus,
     OrderStruct,
     SignatureType,
     SignedOrder,

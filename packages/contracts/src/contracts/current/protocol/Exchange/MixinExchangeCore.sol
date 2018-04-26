@@ -24,7 +24,7 @@ import "./mixins/MSettlement.sol";
 import "./mixins/MSignatureValidator.sol";
 import "./mixins/MTransactions.sol";
 import "./LibOrder.sol";
-import "./LibErrors.sol";
+import "./LibOrderStatus.sol";
 import "./LibPartialAmount.sol";
 import "../../utils/SafeMath/SafeMath.sol";
 
@@ -38,7 +38,7 @@ contract MixinExchangeCore is
     MSignatureValidator,
     MTransactions,
     SafeMath,
-    LibErrors,
+    LibOrderStatus,
     LibPartialAmount
 {
     // Mapping of orderHash => amount of takerAsset already bought by maker
@@ -81,9 +81,9 @@ contract MixinExchangeCore is
     * Core exchange functions
     */
 
-    function orderStatus(
+    function getOrderStatus(
         Order memory order,
-        bytes signature)
+        bytes memory signature)
         public
         view
         returns (
@@ -104,7 +104,7 @@ contract MixinExchangeCore is
             // Instead of distinguishing between unfilled and filled zero taker
             // amount orders, we choose not to support them.
             if (order.takerAssetAmount == 0) {
-                status = uint8(Errors.ORDER_INVALID);
+                status = uint8(OrderStatus.ORDER_INVALID);
                 return;
             }
 
@@ -113,49 +113,49 @@ contract MixinExchangeCore is
             // edge cases in the supporting infrastructure because they have
             // an 'infinite' price when computed by a simple division.
             if (order.makerAssetAmount == 0) {
-                status = uint8(Errors.ORDER_INVALID);
+                status = uint8(OrderStatus.ORDER_INVALID);
                 return;
             }
 
             // Maker signature needs to be valid
             if (!isValidSignature(orderHash, order.makerAddress, signature)) {
-                status = uint8(Errors.ORDER_SIGNATURE_INVALID);
+                status = uint8(OrderStatus.ORDER_SIGNATURE_INVALID);
                 return;
             }
         }
 
         // Validate order expiration
         if (block.timestamp >= order.expirationTimeSeconds) {
-            status = uint8(Errors.ORDER_EXPIRED);
+            status = uint8(OrderStatus.ORDER_EXPIRED);
             return;
         }
 
         // Validate order availability
         if (filledAmount >= order.takerAssetAmount) {
-            status = uint8(Errors.ORDER_FULLY_FILLED);
+            status = uint8(OrderStatus.ORDER_FULLY_FILLED);
             return;
         }
 
         // Check if order has been cancelled
         if (cancelled[orderHash]) {
-            status = uint8(Errors.ORDER_CANCELLED);
+            status = uint8(OrderStatus.ORDER_CANCELLED);
             return;
         }
 
         // Validate order is not cancelled
         if (makerEpoch[order.makerAddress] > order.salt) {
-            status = uint8(Errors.ORDER_CANCELLED);
+            status = uint8(OrderStatus.ORDER_CANCELLED);
             return;
         }
 
         // Validate sender is allowed to fill this order
         if (order.senderAddress != address(0) && order.senderAddress != msg.sender) {
-            status = uint8(Errors.ORDER_SENDER_INVALID);
+            status = uint8(OrderStatus.ORDER_SENDER_INVALID);
             return;
         }
 
         // Order is OK
-        status = uint8(Errors.SUCCESS);
+        status = uint8(OrderStatus.SUCCESS);
         return;
     }
 
@@ -188,7 +188,7 @@ contract MixinExchangeCore is
             order.takerAssetAmount,
             order.makerAssetAmount))
         {
-            status = uint8(Errors.ROUNDING_ERROR_TOO_LARGE);
+            status = uint8(OrderStatus.ROUNDING_ERROR_TOO_LARGE);
             return;
         }
 
@@ -208,7 +208,7 @@ contract MixinExchangeCore is
             order.takerAssetAmount,
             order.takerFee);
 
-        status = uint8(Errors.SUCCESS);
+        status = uint8(OrderStatus.SUCCESS);
         return;
     }
 
@@ -242,12 +242,12 @@ contract MixinExchangeCore is
         bytes32 orderHash;
         uint8 status;
         uint256 filledAmount;
-        (status, orderHash, filledAmount) = orderStatus(order, signature);
-        if (!isValidOrderStatus(Errors(status))) {
-            emit ExchangeError(uint8(status), orderHash);
+        (status, orderHash, filledAmount) = getOrderStatus(order, signature);
+        if (!isValidOrderStatus(OrderStatus(status))) {
+            emit ExchangeOrderStatus(uint8(status), orderHash);
             revert();
-        } else if (status != uint8(Errors.SUCCESS)) {
-            emit ExchangeError(uint8(status), orderHash);
+        } else if (status != uint8(OrderStatus.SUCCESS)) {
+            emit ExchangeOrderStatus(uint8(status), orderHash);
             return fillResults;
         }
 
@@ -265,8 +265,8 @@ contract MixinExchangeCore is
             filledAmount,
             takerAssetFillAmount,
             takerAddress);
-        if (status != uint8(Errors.SUCCESS)) {
-            emit ExchangeError(uint8(status), orderHash);
+        if (status != uint8(OrderStatus.SUCCESS)) {
+            emit ExchangeOrderStatus(uint8(status), orderHash);
             return fillResults;
         }
 
@@ -304,12 +304,12 @@ contract MixinExchangeCore is
         require(order.makerAddress == makerAddress);
 
         if (block.timestamp >= order.expirationTimeSeconds) {
-            emit ExchangeError(uint8(Errors.ORDER_EXPIRED), orderHash);
+            emit ExchangeOrderStatus(uint8(OrderStatus.ORDER_EXPIRED), orderHash);
             return false;
         }
 
         if (cancelled[orderHash]) {
-            emit ExchangeError(uint8(Errors.ORDER_CANCELLED), orderHash);
+            emit ExchangeOrderStatus(uint8(OrderStatus.ORDER_CANCELLED), orderHash);
             return false;
         }
 

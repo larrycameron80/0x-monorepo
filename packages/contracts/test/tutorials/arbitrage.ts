@@ -14,7 +14,7 @@
 // import { crypto } from '../../src/utils/crypto';
 // import { ExchangeWrapper } from '../../src/utils/exchange_wrapper';
 // import { OrderFactory } from '../../src/utils/order_factory';
-// import { BalancesByOwner, ContractName, ExchangeContractErrs } from '../../src/utils/types';
+// import { BalancesByOwner, ContractName, ExchangeContractOrderStatus } from '../../src/utils/types';
 // import { chaiSetup } from '../utils/chai_setup';
 // import { deployer } from '../utils/deployer';
 // import { provider, web3Wrapper } from '../utils/web3_wrapper';
