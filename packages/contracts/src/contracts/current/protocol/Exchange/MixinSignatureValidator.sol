@@ -28,12 +28,13 @@ contract MixinSignatureValidator is MSignatureValidator {
     enum SignatureType {
         Illegal, // Default value
         Invalid,
-        Caller,
-        Ecrecover,
         EIP712,
-        Trezor,
+        Ecrecover,
+        TxOrigin,
+        Caller,
         Contract,
-        PreSigned
+        PreSigned,
+        Trezor
     }
 
     // Mapping of hash => signer => signed
@@ -57,13 +58,13 @@ contract MixinSignatureValidator is MSignatureValidator {
         require(signature.length >= 1);
         SignatureType signatureType = SignatureType(uint8(signature[0]));
 
-        // Variables are not scoped in Solidity
+        // Variables are not scoped in Solidity.
         uint8 v;
         bytes32 r;
         bytes32 s;
         address recovered;
 
-        // Always illegal signature
+        // Always illegal signature.
         // This is always an implicit option since a signer can create a
         // signature array with invalid type or length. We may as well make
         // it an explicit option. This aids testing and analysis. It is
@@ -71,7 +72,7 @@ contract MixinSignatureValidator is MSignatureValidator {
         if (signatureType == SignatureType.Illegal) {
             revert();
 
-        // Always invalid signature
+        // Always invalid signature.
         // Like Illegal, this is always implicitly available and therefore
         // offered explicitly. It can be implicitly created by providing
         // a correctly formatted but incorrect signature.
@@ -80,17 +81,14 @@ contract MixinSignatureValidator is MSignatureValidator {
             isValid = false;
             return isValid;
 
-        // Implicitly signed by caller
-        // The signer has initiated the call. In the case of non-contract
-        // accounts it means the transaction itself was signed.
-        // Example: let's say for a particular operation three signatures
-        // A, B and C are required. To submit the transaction, A and B can
-        // give a signature to C, who can then submit the transaction using
-        // `Caller` for his own signature. Or A and C can sign and B can
-        // submit using `Caller`. Having `Caller` allows this flexibility.
-        } else if (signatureType == SignatureType.Caller) {
-            require(signature.length == 1);
-            isValid = signer == msg.sender;
+        // Signature using EIP712
+        } else if (signatureType == SignatureType.EIP712) {
+            require(signature.length == 66);
+            v = uint8(signature[1]);
+            r = get32(signature, 2);
+            s = get32(signature, 34);
+            recovered = ecrecover(hash, v, r, s);
+            isValid = signer == recovered;
             return isValid;
 
         // Signed using web3.eth_sign
@@ -108,17 +106,42 @@ contract MixinSignatureValidator is MSignatureValidator {
             isValid = signer == recovered;
             return isValid;
 
-        // Signature using EIP712
-        } else if (signatureType == SignatureType.EIP712) {
-            require(signature.length == 66);
-            v = uint8(signature[1]);
-            r = get32(signature, 2);
-            s = get32(signature, 34);
-            recovered = ecrecover(hash, v, r, s);
-            isValid = signer == recovered;
+        // Implicitly signed by signer of Ethereum transaction.
+        // This is useful when initiating a call from a contract that might
+        // otherwise require multiple signatures.
+        // Example: Contract A calls Exchange.fillOrder using `executeTransaction`.
+        // This would normally require the user to sign both an Ethereum transaction
+        // and a 0x transaction. By using the TxOrigin signature type, the signature
+        // for the Ethereum transaction will encompass both signatures.
+        } else if (signatureType == SignatureType.TxOrigin) {
+            require(signature.length == 1);
+            isValid = signer == tx.origin;
             return isValid;
 
-        // Signature from Trezor hardware wallet
+        // Implicitly signed by caller.
+        // The signer has initiated the call. In the case of non-contract
+        // accounts it means the transaction itself was signed.
+        // Example: let's say for a particular operation three signatures
+        // A, B and C are required. To submit the transaction, A and B can
+        // give a signature to C, who can then submit the transaction using
+        // `Caller` for his own signature. Or A and C can sign and B can
+        // submit using `Caller`. Having `Caller` allows this flexibility.
+        } else if (signatureType == SignatureType.Caller) {
+            require(signature.length == 1);
+            isValid = signer == msg.sender;
+            return isValid;
+
+        // Signature verified by signer contract.
+        } else if (signatureType == SignatureType.Contract) {
+            isValid = ISigner(signer).isValidSignature(hash, signature);
+            return isValid;
+
+        // Signer signed hash previously using the preSign function.
+        } else if (signatureType == SignatureType.PreSigned) {
+            isValid = preSigned[hash][signer];
+            return isValid;
+
+        // Signature from Trezor hardware wallet.
         // It differs from web3.eth_sign in the encoding of message length
         // (Bitcoin varint encoding vs ascii-decimal, the latter is not
         // self-terminating which leads to ambiguities).
@@ -138,16 +161,6 @@ contract MixinSignatureValidator is MSignatureValidator {
                 s
             );
             isValid = signer == recovered;
-            return isValid;
-
-        // Signature verified by signer contract
-        } else if (signatureType == SignatureType.Contract) {
-            isValid = ISigner(signer).isValidSignature(hash, signature);
-            return isValid;
-
-        // Signer signed hash previously using the preSign function
-        } else if (signatureType == SignatureType.PreSigned) {
-            isValid = preSigned[hash][signer];
             return isValid;
         }
 

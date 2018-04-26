@@ -145,11 +145,13 @@ export interface UnsignedOrder extends OrderStruct {
 export enum SignatureType {
     Illegal,
     Invalid,
-    Caller,
-    Ecrecover,
     EIP712,
-    Trezor,
+    Ecrecover,
+    TxOrigin,
+    Caller,
     Contract,
+    PreSigned,
+    Trezor,
 }
 
 export interface SignedTransaction {
