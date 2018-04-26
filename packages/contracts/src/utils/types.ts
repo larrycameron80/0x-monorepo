@@ -101,6 +101,7 @@ export enum ContractName {
     DummyERC721Token = 'DummyERC721Token',
     LibBytes = 'LibBytes',
     Authorizable = 'Authorizable',
+    Whitelist = 'Whitelist',
 }
 
 export interface Artifact {
