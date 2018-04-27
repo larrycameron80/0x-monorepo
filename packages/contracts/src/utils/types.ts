@@ -79,17 +79,14 @@ export enum ExchangeStatus {
     SUCCESS,
     ROUNDING_ERROR_TOO_LARGE,
     INSUFFICIENT_BALANCE_OR_ALLOWANCE,
-}
-
-export enum OrderStatus {
-    INVALID,
     INVALID_SIGNATURE,
     INVALID_SENDER,
     INVALID_TAKER,
-    FILLABLE,
-    EXPIRED,
-    FULLY_FILLED,
-    CANCELLED,
+    INVALID_MAKER,
+    ORDER_FILLABLE,
+    ORDER_EXPIRED,
+    ORDER_FULLY_FILLED,
+    ORDER_CANCELLED,
 }
 
 export enum ContractName {

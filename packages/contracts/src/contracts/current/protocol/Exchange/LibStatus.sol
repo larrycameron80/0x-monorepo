@@ -23,10 +23,23 @@ contract LibStatus {
 
     // Exchange Status Codes
     enum Status {
-        INVALID,                            // Default status
-        SUCCESS,                            // Indicates a successful operation
-        ROUNDING_ERROR_TOO_LARGE,           // Rounding error too large
-        INSUFFICIENT_BALANCE_OR_ALLOWANCE   // Insufficient balance or allowance for token transfer
+        /// Default Status ///
+        INVALID,                                // General invalid status
+
+        /// General Exchange Statuses ///
+        SUCCESS,                                // Indicates a successful operation
+        ROUNDING_ERROR_TOO_LARGE,               // Rounding error too large
+        INSUFFICIENT_BALANCE_OR_ALLOWANCE,      // Insufficient balance or allowance for token transfer
+        INVALID_SIGNATURE,                      // Invalid signature
+        INVALID_SENDER,                         // Invalid sender
+        INVALID_TAKER,                          // Invalid taker
+        INVALID_MAKER,                          // Invalid maker
+
+        /// Order State Statuses ///
+        ORDER_FILLABLE,                         // Order is fillable
+        ORDER_EXPIRED,                          // Order has already expired
+        ORDER_FULLY_FILLED,                     // Order is fully filled
+        ORDER_CANCELLED                         // Order has been cancelled
     }
 
     event ExchangeStatus(uint8 indexed statusId, bytes32 indexed orderHash);

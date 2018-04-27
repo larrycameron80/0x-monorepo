@@ -99,7 +99,7 @@ contract MixinExchangeCore is
         // Instead of distinguishing between unfilled and filled zero taker
         // amount orders, we choose not to support them.
         if (order.takerAssetAmount == 0) {
-            status = uint8(OrderStatus.INVALID);
+            status = uint8(Status.INVALID);
             return;
         }
 
@@ -108,42 +108,36 @@ contract MixinExchangeCore is
         // edge cases in the supporting infrastructure because they have
         // an 'infinite' price when computed by a simple division.
         if (order.makerAssetAmount == 0) {
-            status = uint8(OrderStatus.INVALID);
+            status = uint8(Status.INVALID);
             return;
         }
 
         // Validate order expiration
         if (block.timestamp >= order.expirationTimeSeconds) {
-            status = uint8(OrderStatus.EXPIRED);
+            status = uint8(Status.ORDER_EXPIRED);
             return;
         }
 
         // Validate order availability
         if (filledAmount >= order.takerAssetAmount) {
-            status = uint8(OrderStatus.FULLY_FILLED);
+            status = uint8(Status.ORDER_FULLY_FILLED);
             return;
         }
 
         // Check if order has been cancelled
         if (cancelled[orderHash]) {
-            status = uint8(OrderStatus.CANCELLED);
+            status = uint8(Status.ORDER_CANCELLED);
             return;
         }
 
         // Validate order is not cancelled
         if (makerEpoch[order.makerAddress] > order.salt) {
-            status = uint8(OrderStatus.CANCELLED);
-            return;
-        }
-
-        // Validate sender is allowed to fill this order
-        if (order.senderAddress != address(0) && order.senderAddress != msg.sender) {
-            status = uint8(OrderStatus.INVALID_SENDER);
+            status = uint8(Status.ORDER_CANCELLED);
             return;
         }
 
         // Order is Fillable
-        status = uint8(OrderStatus.FILLABLE);
+        status = uint8(Status.ORDER_FILLABLE);
         return;
     }
 
@@ -228,20 +222,26 @@ contract MixinExchangeCore is
     {
         // Fetch current order status
         bytes32 orderHash;
-        uint8 orderStatus;
+        uint8 status;
         uint256 filledAmount;
-        (orderStatus, orderHash, filledAmount) = getOrderStatus(order);
-        if (!isValidOrderStatus(OrderStatus(orderStatus))) {
-            emit ExchangeOrderStatus(uint8(orderStatus), orderHash);
+        (status, orderHash, filledAmount) = getOrderStatus(order);
+        if (status == uint8(Status.INVALID)) {
+            emit ExchangeStatus(uint8(status), orderHash);
             revert();
-        } else if (orderStatus != uint8(OrderStatus.FILLABLE)) {
-            emit ExchangeOrderStatus(uint8(orderStatus), orderHash);
+        } else if (status != uint8(Status.ORDER_FILLABLE)) {
+            emit ExchangeStatus(uint8(status), orderHash);
             return fillResults;
         }
 
         // Validate Maker signature (check only if first time seen)
         if (filledAmount == 0 && !isValidSignature(orderHash, order.makerAddress, signature)) {
-            emit ExchangeStatus(uint8(OrderStatus.INVALID_SIGNATURE), orderHash);
+            emit ExchangeStatus(uint8(Status.INVALID_SIGNATURE), orderHash);
+            revert();
+        }
+
+        // Validate sender is allowed to fill this order
+        if (order.senderAddress != address(0) && order.senderAddress != msg.sender) {
+            emit ExchangeStatus(uint8(Status.INVALID_SENDER), orderHash);
             revert();
         }
 
@@ -252,7 +252,6 @@ contract MixinExchangeCore is
         uint256 makerAssetFilledAmount;
         uint256 makerFeePaid;
         uint256 takerFeePaid;
-        uint256 status;
         (   status,
             fillResults
         ) = getFillAmounts(
@@ -301,20 +300,26 @@ contract MixinExchangeCore is
     {
         // Compute the order hash
         bytes32 orderHash;
-        uint8 orderStatus;
+        uint8 status;
         uint256 filledAmount;
-        (orderStatus, orderHash, filledAmount) = getOrderStatus(order);
-        if (!isValidOrderStatus(OrderStatus(orderStatus))) {
-            emit ExchangeOrderStatus(uint8(orderStatus), orderHash);
+        (status, orderHash, filledAmount) = getOrderStatus(order);
+        if (status == uint8(Status.INVALID)) {
+            emit ExchangeStatus(uint8(status), orderHash);
             revert();
-        } else if (orderStatus != uint8(OrderStatus.FILLABLE)) {
-            emit ExchangeOrderStatus(uint8(orderStatus), orderHash);
+        } else if (status != uint8(Status.ORDER_FILLABLE)) {
+            emit ExchangeStatus(uint8(status), orderHash);
             return false;
         }
 
         // Validate transaction signed by maker
         address makerAddress = getCurrentContextAddress();
         require(order.makerAddress == makerAddress);
+
+        // Validate sender is allowed to fill this order
+        if (order.senderAddress != address(0) && order.senderAddress != msg.sender) {
+            emit ExchangeStatus(uint8(Status.INVALID_SENDER), orderHash);
+            revert();
+        }
 
         // Perform cancel
         updateCancelledState(order, orderHash);

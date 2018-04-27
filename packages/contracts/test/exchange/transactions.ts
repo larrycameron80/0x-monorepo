@@ -21,7 +21,6 @@ import {
     ContractName,
     ERC20BalancesByOwner,
     ExchangeStatus,
-    OrderStatus,
     OrderStruct,
     SignatureType,
     SignedOrder,
