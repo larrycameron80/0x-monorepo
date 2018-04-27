@@ -30,6 +30,7 @@ contract LibStatus {
         SUCCESS,                                // Indicates a successful operation
         ROUNDING_ERROR_TOO_LARGE,               // Rounding error too large
         INSUFFICIENT_BALANCE_OR_ALLOWANCE,      // Insufficient balance or allowance for token transfer
+        TAKER_ASSET_FILL_AMOUNT_TOO_LOW,        // takerAssetFillAmount is <= 0
         INVALID_SIGNATURE,                      // Invalid signature
         INVALID_SENDER,                         // Invalid sender
         INVALID_TAKER,                          // Invalid taker

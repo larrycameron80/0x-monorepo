@@ -141,9 +141,10 @@ contract MixinExchangeCore is
         return;
     }
 
-    function validateFillContextOrRevert(Order memory order, uint8 orderStatus, bytes32 orderHash, uint256 filledAmount, bytes memory signature, address takerAddress)
+    function validateFillContextOrRevert(Order memory order, uint8 orderStatus, bytes32 orderHash, uint256 filledAmount, bytes memory signature, address takerAddress, uint256 takerAssetFillAmount)
     private
     {
+        // Ensure order status is not invalid
         if (orderStatus == uint8(Status.INVALID)) {
             emit ExchangeStatus(uint8(orderStatus), orderHash);
             revert();
@@ -162,13 +163,21 @@ contract MixinExchangeCore is
         }
 
         // Validate taker is allowed to fill this order
-        if (order.takerAddress != address(0)) {
-            require(order.takerAddress == takerAddress);
+        if (order.takerAddress != address(0) && order.takerAddress != takerAddress) {
+            emit ExchangeStatus(uint8(Status.INVALID_TAKER), orderHash);
+            revert();
+        }
+
+        // Ensure valid takerAssetFillAmount
+        if(takerAssetFillAmount <= 0) {
+            emit ExchangeStatus(uint8(Status.TAKER_ASSET_FILL_AMOUNT_TOO_LOW), orderHash);
+            revert();
         }
     }
 
     function getFillAmounts(
         Order memory order,
+        uint8 orderStatus,
         uint256 filledAmount,
         uint256 takerAssetFillAmount,
         address takerAddress)
@@ -178,7 +187,17 @@ contract MixinExchangeCore is
             uint8 status,
             FillResults memory fillResults)
     {
-        require(takerAssetFillAmount > 0);
+        // Fill Amount must be greater than 0
+        if(takerAssetFillAmount <= 0) {
+            status = uint8(Status.TAKER_ASSET_FILL_AMOUNT_TOO_LOW);
+            return;
+        }
+
+        // Ensure the order is fillable
+        if (orderStatus != uint8(Status.ORDER_FILLABLE)) {
+            status = uint8(orderStatus);
+            return;
+        }
 
         // Compute takerAssetFilledAmount
         uint256 remainingtakerAssetAmount = safeSub(order.takerAssetAmount, filledAmount);
@@ -250,17 +269,11 @@ contract MixinExchangeCore is
         address takerAddress = getCurrentContextAddress();
 
         // Either our context is valid or we revert
-        validateFillContextOrRevert(order, orderStatus, orderHash, filledAmount, signature, takerAddress);
-
-        // Ensure the order is fillable
-        if (orderStatus != uint8(Status.ORDER_FILLABLE)) {
-            emit ExchangeStatus(uint8(orderStatus), orderHash);
-            return fillResults;
-        }
+        validateFillContextOrRevert(order, orderStatus, orderHash, filledAmount, signature, takerAddress, takerAssetFillAmount);
 
         // Compute proportional fill amounts
         uint8 status;
-        (status, fillResults) = getFillAmounts(order, filledAmount, takerAssetFillAmount, takerAddress);
+        (status, fillResults) = getFillAmounts(order, orderStatus, filledAmount, takerAssetFillAmount, takerAddress);
         if (status != uint8(Status.SUCCESS)) {
             emit ExchangeStatus(uint8(status), orderHash);
             return fillResults;
@@ -286,7 +299,10 @@ contract MixinExchangeCore is
 
         // Validate transaction signed by maker
         address makerAddress = getCurrentContextAddress();
-        require(order.makerAddress == makerAddress);
+        if(order.makerAddress != makerAddress) {
+            emit ExchangeStatus(uint8(Status.INVALID_MAKER), orderHash);
+            revert();
+        }
 
         // Validate sender is allowed to cancel this order
         if (order.senderAddress != address(0) && order.senderAddress != msg.sender) {
@@ -297,12 +313,21 @@ contract MixinExchangeCore is
 
     function updateCancelledState(
         Order memory order,
+        uint8 orderStatus,
         bytes32 orderHash)
         private
+        returns (bool)
     {
+        // Ensure order is fillable (otherwise cancelling does nothing)
+        if (orderStatus != uint8(Status.ORDER_FILLABLE)) {
+            emit ExchangeStatus(uint8(orderStatus), orderHash);
+            return false;
+        }
+
         // Perform cancel
         cancelled[orderHash] = true;
 
+        // Log cancel
         emit Cancel(
             order.makerAddress,
             order.feeRecipientAddress,
@@ -329,15 +354,8 @@ contract MixinExchangeCore is
         // Validate context
         validateCancelContextOrRevert(order, orderStatus, orderHash);
 
-        // Ensure order is fillable (otherwise cancelling is redundant)
-        if (orderStatus != uint8(Status.ORDER_FILLABLE)) {
-            emit ExchangeStatus(uint8(orderStatus), orderHash);
-            return false;
-        }
-
         // Perform cancel
-        updateCancelledState(order, orderHash);
-        return true;
+        return updateCancelledState(order, orderStatus, orderHash);
     }
 
     /// @param salt Orders created with a salt less or equal to this value will be cancelled.
