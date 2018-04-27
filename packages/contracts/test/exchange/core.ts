@@ -27,7 +27,8 @@ import {
     AssetProxyId,
     ContractName,
     ERC20BalancesByOwner,
-    ExchangeContractOrderStatus,
+    ExchangeStatus,
+    OrderStatus,
     SignedOrder,
 } from '../../src/utils/types';
 import { chaiSetup } from '../utils/chai_setup';
@@ -561,8 +562,8 @@ describe('Exchange core', () => {
             const res = await exchangeWrapper.fillOrderAsync(signedOrder, takerAddress);
             expect(res.logs).to.have.length(1);
             const log = res.logs[0] as LogWithDecodedArgs<ExchangeOrderStatusContractEventArgs>;
-            const statusCode = log.args.orderStatusId;
-            expect(statusCode).to.be.equal(ExchangeContractOrderStatus.ORDER_EXPIRED);
+            const statusCode = log.args.statusId;
+            expect(statusCode).to.be.equal(OrderStatus.EXPIRED);
         });
 
         it('should log an error event if no value is filled', async () => {
@@ -572,8 +573,8 @@ describe('Exchange core', () => {
             const res = await exchangeWrapper.fillOrderAsync(signedOrder, takerAddress);
             expect(res.logs).to.have.length(1);
             const log = res.logs[0] as LogWithDecodedArgs<ExchangeOrderStatusContractEventArgs>;
-            const statusCode = log.args.orderStatusId;
-            expect(statusCode).to.be.equal(ExchangeContractOrderStatus.ORDER_FULLY_FILLED);
+            const statusCode = log.args.statusId;
+            expect(statusCode).to.be.equal(OrderStatus.FULLY_FILLED);
         });
     });
 
@@ -640,8 +641,8 @@ describe('Exchange core', () => {
             const res = await exchangeWrapper.cancelOrderAsync(signedOrder, makerAddress);
             expect(res.logs).to.have.length(1);
             const log = res.logs[0] as LogWithDecodedArgs<ExchangeOrderStatusContractEventArgs>;
-            const statusCode = log.args.orderStatusId;
-            expect(statusCode).to.be.equal(ExchangeContractOrderStatus.ORDER_CANCELLED);
+            const statusCode = log.args.statusId;
+            expect(statusCode).to.be.equal(OrderStatus.CANCELLED);
         });
 
         it('should log error if order is expired', async () => {
@@ -652,8 +653,8 @@ describe('Exchange core', () => {
             const res = await exchangeWrapper.cancelOrderAsync(signedOrder, makerAddress);
             expect(res.logs).to.have.length(1);
             const log = res.logs[0] as LogWithDecodedArgs<ExchangeOrderStatusContractEventArgs>;
-            const statusCode = log.args.orderStatusId;
-            expect(statusCode).to.be.equal(ExchangeContractOrderStatus.ORDER_EXPIRED);
+            const statusCode = log.args.statusId;
+            expect(statusCode).to.be.equal(OrderStatus.EXPIRED);
         });
     });
 

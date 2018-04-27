@@ -81,4 +81,25 @@ contract LibOrder {
         );
         return orderHash;
     }
+
+    enum OrderStatus {
+        INVALID,                // Default status
+        INVALID_SIGNATURE,      // Signature invalid
+        INVALID_SENDER,         // Sender invalid
+        INVALID_TAKER,          // Order can not be filled by taker
+        FILLABLE,               // Order is fillable
+        EXPIRED,                // Order has already expired
+        FULLY_FILLED,           // Order has already been fully filled
+        CANCELLED               // Order has already been cancelled
+    }
+
+    event ExchangeOrderStatus(uint8 indexed statusId, bytes32 indexed orderHash);
+
+    function isValidOrderStatus(OrderStatus status) internal pure returns (bool) {
+        if (status == OrderStatus.INVALID) return false;
+        if (status == OrderStatus.INVALID_SIGNATURE) return false;
+        if (status == OrderStatus.INVALID_SENDER) return false;
+        if (status == OrderStatus.INVALID_TAKER) return false;
+        return true;
+    }
 }

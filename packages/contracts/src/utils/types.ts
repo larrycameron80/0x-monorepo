@@ -74,17 +74,22 @@ export interface Token {
     swarmHash: string;
 }
 
-export enum ExchangeContractOrderStatus {
+export enum ExchangeStatus {
     INVALID,
     SUCCESS,
-    ORDER_INVALID,
-    ORDER_SIGNATURE_INVALID,
-    ORDER_SENDER_INVALID,
-    ORDER_EXPIRED,
-    ORDER_FULLY_FILLED,
-    ORDER_CANCELLED,
     ROUNDING_ERROR_TOO_LARGE,
     INSUFFICIENT_BALANCE_OR_ALLOWANCE,
+}
+
+export enum OrderStatus {
+    INVALID,
+    INVALID_SIGNATURE,
+    INVALID_SENDER,
+    INVALID_TAKER,
+    FILLABLE,
+    EXPIRED,
+    FULLY_FILLED,
+    CANCELLED,
 }
 
 export enum ContractName {
