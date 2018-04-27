@@ -43,4 +43,32 @@ contract MExchangeCore is LibOrder {
 
     function cancelOrdersUpTo(uint256 salt)
         external;
+
+    function getOrderStatus(Order memory order)
+        public
+        view
+        returns (
+            uint8 status,
+            bytes32 orderHash,
+            uint256 filledAmount);
+
+
+    function getFillAmounts(
+        Order memory order,
+        uint8 orderStatus,
+        uint256 filledAmount,
+        uint256 takerAssetFillAmount,
+        address takerAddress)
+        public
+        pure
+        returns (
+            uint8 status,
+            FillResults memory fillResults);
+
+    function updateFilledState(
+        Order memory order,
+        address takerAddress,
+        bytes32 orderHash,
+        FillResults memory fillResults)
+        internal;
 }

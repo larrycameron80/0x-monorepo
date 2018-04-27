@@ -20,8 +20,9 @@ pragma solidity ^0.4.21;
 pragma experimental ABIEncoderV2;
 
 import "../LibOrder.sol";
+import "./MMatchOrders.sol";
 
-contract MSettlement is LibOrder {
+contract MSettlement is LibOrder, MMatchOrders {
 
     function settleOrder(
         Order memory order,
@@ -33,5 +34,8 @@ contract MSettlement is LibOrder {
             uint256 makerFeePaid,
             uint256 takerFeePaid
         );
+
+        function settleMatchedOrders(Order memory left, Order memory right, MatchedOrderFillAmounts memory matchedFillOrderAmounts, address taker)
+            internal;
 
 }

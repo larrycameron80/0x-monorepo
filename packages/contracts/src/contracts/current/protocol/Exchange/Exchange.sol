@@ -25,10 +25,12 @@ import "./MixinSettlement.sol";
 import "./MixinWrapperFunctions.sol";
 import "./MixinAssetProxyDispatcher.sol";
 import "./MixinTransactions.sol";
+import "./MixinMatchOrders.sol";
 
 contract Exchange is
     MixinExchangeCore,
     MixinSignatureValidator,
+    MixinMatchOrders,
     MixinSettlement,
     MixinWrapperFunctions,
     MixinAssetProxyDispatcher,

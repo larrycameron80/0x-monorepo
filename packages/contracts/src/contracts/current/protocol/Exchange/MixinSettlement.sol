@@ -23,9 +23,11 @@ import "./mixins/MSettlement.sol";
 import "./mixins/MAssetProxyDispatcher.sol";
 import "./LibPartialAmount.sol";
 import "../AssetProxy/IAssetProxy.sol";
+import "./mixins/MMatchOrders.sol";
 
 /// @dev Provides MixinSettlement
 contract MixinSettlement is
+    MMatchOrders,
     MSettlement,
     MAssetProxyDispatcher,
     LibPartialAmount
@@ -84,5 +86,79 @@ contract MixinSettlement is
             takerFeePaid
         );
         return (makerAssetFilledAmount, makerFeePaid, takerFeePaid);
+    }
+
+    function settleMatchedOrders(Order memory left, Order memory right, MatchedOrderFillAmounts memory matchedFillOrderAmounts, address taker)
+        internal
+    {
+        // Optimized for:
+        // * left.feeRecipient =?= right.feeRecipient
+
+        // Not optimized for:
+        // * {left, right}.{makerToken, takerToken} == ZRX
+        // * {left, right}.maker, taker == {left, right}.feeRecipient
+
+        // left.makerToken == right.takerToken
+        // Taker should be left with a positive balance (the spread)
+        dispatchTransferFrom(
+            left.makerAssetData,
+            left.makerAddress,
+            taker,
+            matchedFillOrderAmounts.leftMakerTokenFilledAmount);
+        dispatchTransferFrom(
+            left.makerAssetData,
+            taker,
+            right.makerAddress,
+            matchedFillOrderAmounts.rightTakerTokenFilledAmount);
+
+        // right.makerToken == left.takerToken
+        // leftTakerTokenFilledAmount ~ rightMakerTokenFilledAmount
+        // The change goes to right, not to taker.
+        assert(matchedFillOrderAmounts.rightMakerTokenFilledAmount >= matchedFillOrderAmounts.leftTakerTokenFilledAmount);
+        dispatchTransferFrom(
+            right.makerAssetData,
+            right.makerAddress,
+            left.makerAddress,
+            matchedFillOrderAmounts.rightMakerTokenFilledAmount);
+
+        // Maker fees
+        dispatchTransferFrom(
+            ZRX_PROXY_DATA,
+            left.makerAddress,
+            left.feeRecipientAddress,
+            matchedFillOrderAmounts.leftMakerFeeAmountPaid);
+        dispatchTransferFrom(
+            ZRX_PROXY_DATA,
+            right.makerAddress,
+            right.feeRecipientAddress,
+            matchedFillOrderAmounts.rightMakerFeeAmountPaid);
+
+        // Taker fees
+        // If we assume distinct(left, right, taker) and
+        // distinct(makerToken, takerToken, zrx) then the only remaining
+        // opportunity for optimization is when both feeRecipientAddress' are
+        // the same.
+        if(left.feeRecipientAddress == right.feeRecipientAddress) {
+            dispatchTransferFrom(
+                ZRX_PROXY_DATA,
+                taker,
+                left.feeRecipientAddress,
+                safeAdd(
+                    matchedFillOrderAmounts.leftTakerFeeAmountPaid,
+                    matchedFillOrderAmounts.rightTakerFeeAmountPaid
+                )
+            );
+        } else {
+            dispatchTransferFrom(
+                ZRX_PROXY_DATA,
+                taker,
+                left.feeRecipientAddress,
+                matchedFillOrderAmounts.leftTakerFeeAmountPaid);
+            dispatchTransferFrom(
+                ZRX_PROXY_DATA,
+                taker,
+                right.feeRecipientAddress,
+                matchedFillOrderAmounts.rightTakerFeeAmountPaid);
+        }
     }
 }

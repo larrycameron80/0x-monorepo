@@ -238,7 +238,7 @@ contract MixinExchangeCore is
         address takerAddress,
         bytes32 orderHash,
         FillResults memory fillResults)
-        private
+        internal
     {
         // Update state
         filled[orderHash] = safeAdd(filled[orderHash], fillResults.takerAssetFilledAmount);

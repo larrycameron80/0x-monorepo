@@ -20,7 +20,7 @@ pragma solidity ^0.4.21;
 pragma experimental ABIEncoderV2;
 
 contract IExchange {
-    
+
     event LogError(uint8 indexed errorId, bytes32 indexed orderHash);
 
     event LogFill(
