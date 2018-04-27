@@ -141,6 +141,32 @@ contract MixinExchangeCore is
         return;
     }
 
+    function validateFillContextOrRevert(Order memory order, uint8 orderStatus, bytes32 orderHash, uint256 filledAmount, bytes memory signature, address takerAddress)
+    private
+    {
+        if (orderStatus == uint8(Status.INVALID)) {
+            emit ExchangeStatus(uint8(orderStatus), orderHash);
+            revert();
+        }
+
+        // Validate Maker signature (check only if first time seen)
+        if (filledAmount == 0 && !isValidSignature(orderHash, order.makerAddress, signature)) {
+            emit ExchangeStatus(uint8(Status.INVALID_SIGNATURE), orderHash);
+            revert();
+        }
+
+        // Validate sender is allowed to fill this order
+        if (order.senderAddress != address(0) && order.senderAddress != msg.sender) {
+            emit ExchangeStatus(uint8(Status.INVALID_SENDER), orderHash);
+            revert();
+        }
+
+        // Validate taker is allowed to fill this order
+        if (order.takerAddress != address(0)) {
+            require(order.takerAddress == takerAddress);
+        }
+    }
+
     function getFillAmounts(
         Order memory order,
         uint256 filledAmount,
@@ -152,17 +178,11 @@ contract MixinExchangeCore is
             uint8 status,
             FillResults memory fillResults)
     {
-        // Validate taker is allowed to fill this order
-        if (order.takerAddress != address(0)) {
-            require(order.takerAddress == takerAddress);
-        }
         require(takerAssetFillAmount > 0);
 
         // Compute takerAssetFilledAmount
-        uint256 remainingtakerAssetAmount = safeSub(
-            order.takerAssetAmount, filledAmount);
-        fillResults.takerAssetFilledAmount = min256(
-            takerAssetFillAmount, remainingtakerAssetAmount);
+        uint256 remainingtakerAssetAmount = safeSub(order.takerAssetAmount, filledAmount);
+        fillResults.takerAssetFilledAmount = min256(takerAssetFillAmount, remainingtakerAssetAmount);
 
         // Validate fill order rounding
         if (isRoundingError(
@@ -222,43 +242,25 @@ contract MixinExchangeCore is
     {
         // Fetch current order status
         bytes32 orderHash;
-        uint8 status;
+        uint8 orderStatus;
         uint256 filledAmount;
-        (status, orderHash, filledAmount) = getOrderStatus(order);
-        if (status == uint8(Status.INVALID)) {
-            emit ExchangeStatus(uint8(status), orderHash);
-            revert();
-        } else if (status != uint8(Status.ORDER_FILLABLE)) {
-            emit ExchangeStatus(uint8(status), orderHash);
+        (orderStatus, orderHash, filledAmount) = getOrderStatus(order);
+
+        // Fetch taker address
+        address takerAddress = getCurrentContextAddress();
+
+        // Either our context is valid or we revert
+        validateFillContextOrRevert(order, orderStatus, orderHash, filledAmount, signature, takerAddress);
+
+        // Ensure the order is fillable
+        if (orderStatus != uint8(Status.ORDER_FILLABLE)) {
+            emit ExchangeStatus(uint8(orderStatus), orderHash);
             return fillResults;
         }
 
-        // Validate Maker signature (check only if first time seen)
-        if (filledAmount == 0 && !isValidSignature(orderHash, order.makerAddress, signature)) {
-            emit ExchangeStatus(uint8(Status.INVALID_SIGNATURE), orderHash);
-            revert();
-        }
-
-        // Validate sender is allowed to fill this order
-        if (order.senderAddress != address(0) && order.senderAddress != msg.sender) {
-            emit ExchangeStatus(uint8(Status.INVALID_SENDER), orderHash);
-            revert();
-        }
-
-        // Get the taker address
-        address takerAddress = getCurrentContextAddress();
-
         // Compute proportional fill amounts
-        uint256 makerAssetFilledAmount;
-        uint256 makerFeePaid;
-        uint256 takerFeePaid;
-        (   status,
-            fillResults
-        ) = getFillAmounts(
-            order,
-            filledAmount,
-            takerAssetFillAmount,
-            takerAddress);
+        uint8 status;
+        (status, fillResults) = getFillAmounts(order, filledAmount, takerAssetFillAmount, takerAddress);
         if (status != uint8(Status.SUCCESS)) {
             emit ExchangeStatus(uint8(status), orderHash);
             return fillResults;
@@ -271,6 +273,26 @@ contract MixinExchangeCore is
         // Update exchange internal state
         updateFilledState(order, takerAddress, orderHash, fillResults);
         return fillResults;
+    }
+
+    function validateCancelContextOrRevert(Order memory order, uint8 orderStatus, bytes32 orderHash)
+        private
+    {
+        // Ensure order is valid
+        if (orderStatus == uint8(Status.INVALID)) {
+            emit ExchangeStatus(uint8(orderStatus), orderHash);
+            revert();
+        }
+
+        // Validate transaction signed by maker
+        address makerAddress = getCurrentContextAddress();
+        require(order.makerAddress == makerAddress);
+
+        // Validate sender is allowed to cancel this order
+        if (order.senderAddress != address(0) && order.senderAddress != msg.sender) {
+            emit ExchangeStatus(uint8(Status.INVALID_SENDER), orderHash);
+            revert();
+        }
     }
 
     function updateCancelledState(
@@ -298,27 +320,19 @@ contract MixinExchangeCore is
         public
         returns (bool)
     {
-        // Compute the order hash
+        // Fetch current order status
         bytes32 orderHash;
-        uint8 status;
+        uint8 orderStatus;
         uint256 filledAmount;
-        (status, orderHash, filledAmount) = getOrderStatus(order);
-        if (status == uint8(Status.INVALID)) {
-            emit ExchangeStatus(uint8(status), orderHash);
-            revert();
-        } else if (status != uint8(Status.ORDER_FILLABLE)) {
-            emit ExchangeStatus(uint8(status), orderHash);
+        (orderStatus, orderHash, filledAmount) = getOrderStatus(order);
+
+        // Validate context
+        validateCancelContextOrRevert(order, orderStatus, orderHash);
+
+        // Ensure order is fillable (otherwise cancelling is redundant)
+        if (orderStatus != uint8(Status.ORDER_FILLABLE)) {
+            emit ExchangeStatus(uint8(orderStatus), orderHash);
             return false;
-        }
-
-        // Validate transaction signed by maker
-        address makerAddress = getCurrentContextAddress();
-        require(order.makerAddress == makerAddress);
-
-        // Validate sender is allowed to fill this order
-        if (order.senderAddress != address(0) && order.senderAddress != msg.sender) {
-            emit ExchangeStatus(uint8(Status.INVALID_SENDER), orderHash);
-            revert();
         }
 
         // Perform cancel

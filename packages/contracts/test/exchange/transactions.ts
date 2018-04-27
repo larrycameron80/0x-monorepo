@@ -196,7 +196,7 @@ describe('Exchange transactions', () => {
 
             it('should cancel the order when signed by maker and called by sender', async () => {
                 await exchangeWrapper.executeTransactionAsync(signedTx, senderAddress);
-                const res = await exchangeWrapper.fillOrderAsync(signedOrder, takerAddress);
+                const res = await exchangeWrapper.fillOrderAsync(signedOrder, senderAddress);
                 const newBalances = await erc20Wrapper.getBalancesAsync();
                 expect(newBalances).to.deep.equal(erc20Balances);
             });
