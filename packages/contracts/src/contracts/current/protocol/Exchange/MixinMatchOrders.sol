@@ -17,29 +17,42 @@ pragma experimental ABIEncoderV2;
 import "./mixins/MExchangeCore.sol";
 import "./mixins/MMatchOrders.sol";
 import "./mixins/MSettlement.sol";
+import "./mixins/MTransactions.sol";
 import "../../utils/SafeMath/SafeMath.sol";
 import "./LibOrder.sol";
 import "./LibStatus.sol";
-import "./LibPartialAmount";
+import "./LibPartialAmount.sol";
+import "../../utils/LibBytes/LibBytes.sol";
 
-contract MixinMatchOrders is LibOrder, LibStatus, SafeMath, MMatchOrders, MExchangeCore, MSettlement, LibPartialAmount {
+contract MixinMatchOrders is
+    LibOrder,
+    MExchangeCore,
+    MMatchOrders,
+    MSettlement,
+    MTransactions,
+    SafeMath,
+    LibBytes,
+    LibStatus,
+    LibPartialAmount
+
+    {
 
     function validateMatchOrdersContextOrRevert(Order memory left, Order memory right)
         private
     {
-        require(left.makerTokenAddress == right.takerTokenAmount);
-        require(left.takerTokenAddress == right.makerTokenAmount);
+        require(areBytesEqual(left.makerAssetData, right.takerAssetData));
+        require(areBytesEqual(left.takerAssetData, right.makerAssetData));
 
         // Make sure there is a positive spread
         // TODO: Explain
         // TODO: SafeMath
         require(
-            left.makerTokenAmount * right.makerTokenAmount >=
-            left.takerTokenAmount * right.takerTokenAmount);
+            left.makerAssetAmount * right.makerAssetAmount >=
+            left.takerAssetAmount * right.takerAssetAmount);
     }
 
 
-    function getMatchedFillAmounts(Order memory left, Order memory right, uint256 leftFilledAmount, uint256 rightFilledAmount, uint256 takerTokenFillAmount)
+    function getMatchedFillAmounts(Order memory left, Order memory right, uint256 leftFilledAmount, uint256 rightFilledAmount, uint256 takerAssetFillAmount)
         private
         returns (uint8 status, MatchedOrderFillAmounts memory matchedFillOrderAmounts)
     {
@@ -49,100 +62,100 @@ contract MixinMatchOrders is LibOrder, LibStatus, SafeMath, MMatchOrders, MExcha
         // The constraint can be either on the left or on the right. We need to
         // determine where it is.
 
-        uint256 leftRemaining = safeSub(left.takerTokenAmount, leftFilledAmount);
-        uint256 rightRemaining = safeSub(right.takerTokenAmount, rightFilledAmount);
+        uint256 leftRemaining = safeSub(left.takerAssetAmount, leftFilledAmount);
+        uint256 rightRemaining = safeSub(right.takerAssetAmount, rightFilledAmount);
 
         // TODO: SafeMath
-        if(right.makerTokenAmount * rightRemaining <
-            right.takerTokenAmount * leftRemaining)
+        if(right.makerAssetAmount * rightRemaining <
+            right.takerAssetAmount * leftRemaining)
         {
             // leftRemaining is the constraint: maximally fill left
             (   status,
-                matchedFillOrderAmounts.leftMakerTokenFilledAmount,
-                matchedFillOrderAmounts.leftTakerTokenFilledAmount,
+                matchedFillOrderAmounts.leftMakerAssetFilledAmount,
+                matchedFillOrderAmounts.leftTakerAssetFilledAmount,
                 matchedFillOrderAmounts.leftMakerFeeAmountPaid,
                 matchedFillOrderAmounts.leftTakerFeeAmountPaid
             ) = getFillAmounts(
                 left,
                 leftRemaining,
-                takerTokenFillAmount,
+                takerAssetFillAmount,
                 msg.sender);
             if(status != uint8(Status.SUCCESS)) {
                 return status;
             }
 
             // Compute how much we should fill right to satisfy
-            // leftTakerTokenFilledAmount
+            // lefttakerAssetFilledAmount
             // TODO: Check if rounding is in the correct direction.
             uint256 rightFill = getPartialAmount(
-                right.makerTokenAmount,
-                right.takerTokenAmount,
-                matchedFillOrderAmounts.leftMakerTokenFilledAmount);
+                right.makerAssetAmount,
+                right.takerAssetAmount,
+                matchedFillOrderAmounts.leftMakerAssetFilledAmount);
 
             // Compute right fill amounts
             (   status,
-                matchedFillOrderAmounts.rightMakerTokenFilledAmount,
-                matchedFillOrderAmounts.rightTakerTokenFilledAmount,
+                matchedFillOrderAmounts.rightMakerAssetFilledAmount,
+                matchedFillOrderAmounts.rightTakerAssetFilledAmount,
                 matchedFillOrderAmounts.rightMakerFeeAmountPaid,
                 matchedFillOrderAmounts.rightTakerFeeAmountPaid
             ) = getFillAmounts(
                 right,
                 rightFill,
-                takerTokenFillAmount,
+                takerAssetFillAmount,
                 msg.sender);
             if(status != uint8(Status.SUCCESS)) {
                 return status;
             }
 
             // Unfortunately, this is no longer exact and taker may end up
-            // with some left.takerTokens. This will be a rounding error amount.
+            // with some left.takerAssets. This will be a rounding error amount.
             // We should probably not bother and just give them to the makers.
-            assert(matchedFillOrderAmounts.rightMakerTokenFilledAmount >= matchedFillOrderAmounts.leftTakerTokenFilledAmount);
+            assert(matchedFillOrderAmounts.rightmakerAssetFilledAmount >= matchedFillOrderAmounts.lefttakerAssetFilledAmount);
 
             // TODO: Make sure the difference is neglible
 
         } else {
             // rightRemaining is the constraint: maximally fill right
             (   status,
-                matchedFillOrderAmounts.rightMakerTokenFilledAmount,
-                matchedFillOrderAmounts.rightTakerTokenFilledAmount,
+                matchedFillOrderAmounts.rightmakerAssetFilledAmount,
+                matchedFillOrderAmounts.righttakerAssetFilledAmount,
                 matchedFillOrderAmounts.rightMakerFeeAmountPaid,
                 matchedFillOrderAmounts.rightTakerFeeAmountPaid
             ) = getFillAmounts(
                 right,
                 rightRemaining,
-                takerTokenFillAmount,
+                takerAssetFillAmount,
                 msg.sender);
             if(status != uint8(Status.SUCCESS)) {
                 return status;
             }
 
-            // We now have rightMakerTokens to fill left with
-            assert(matchedFillOrderAmounts.rightMakerTokenFilledAmount <= remaingLeft);
+            // We now have rightmakerAssets to fill left with
+            assert(matchedFillOrderAmounts.rightmakerAssetFilledAmount <= /* remainingLeft ? */ leftRemaining);
 
-            // Fill left with all the right.makerToken we received
+            // Fill left with all the right.makerAsset we received
             (   status,
-                matchedFillOrderAmounts.leftMakerTokenFilledAmount,
-                matchedFillOrderAmounts.leftTakerTokenFilledAmount,
+                matchedFillOrderAmounts.leftMakerAssetFilledAmount,
+                matchedFillOrderAmounts.leftTakerAssetFilledAmount,
                 matchedFillOrderAmounts.leftMakerFeeAmountPaid,
                 matchedFillOrderAmounts.leftTakerFeeAmountPaid
             ) = getFillAmounts(
                 left,
-                matchedFillOrderAmounts.rightMakerTokenFilledAmount,
-                takerTokenFillAmount,
+                matchedFillOrderAmounts.rightmakerAssetFilledAmount,
+                takerAssetFillAmount,
                 msg.sender);
             if(status != uint8(Status.SUCCESS)) {
                 return status;
             }
 
-            // Taker should not have leftTakerTokens left
-            assert(matchedFillOrderAmounts.rightMakerTokenFilledAmount == leftTakerTokenFilledAmount);
+            // Taker should not have lefttakerAssets left
+            assert(matchedFillOrderAmounts.rightmakerAssetFilledAmount == matchedFillOrderAmounts.lefttakerAssetFilledAmount);
         }
     }
 
     // Match two complementary orders that overlap.
-    // The taker will end up with the maximum amount of left.makerToken
-    // Any right.makerToken that taker would gain because of rounding are
+    // The taker will end up with the maximum amount of left.makerAsset
+    // Any right.makerAsset that taker would gain because of rounding are
     // transfered to right.
     function matchOrders(
         Order memory left,
@@ -194,16 +207,16 @@ contract MixinMatchOrders is LibOrder, LibStatus, SafeMath, MMatchOrders, MExcha
         updateFilledState(
             left,
             leftOrderHash,
-            matchedFillOrderAmounts.leftMakerTokenFilledAmount,
-            matchedFillOrderAmounts.leftTakerTokenFilledAmount,
+            matchedFillOrderAmounts.leftMakerAssetFilledAmount,
+            matchedFillOrderAmounts.leftTakerAssetFilledAmount,
             matchedFillOrderAmounts.leftMakerFeeAmountPaid,
             matchedFillOrderAmounts.leftTakerFeeAmountPaid
         );
         updateFilledState(
             right,
             rightOrderHash,
-            matchedFillOrderAmounts.rightMakerTokenFilledAmount,
-            matchedFillOrderAmounts.rightTakerTokenFilledAmount,
+            matchedFillOrderAmounts.rightMakerAssetFilledAmount,
+            matchedFillOrderAmounts.rightTakerAssetFilledAmount,
             matchedFillOrderAmounts.rightMakerFeeAmountPaid,
             matchedFillOrderAmounts.rightTakerFeeAmountPaid
         );

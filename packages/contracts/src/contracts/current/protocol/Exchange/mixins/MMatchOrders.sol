@@ -23,12 +23,12 @@ import "../LibOrder.sol";
 contract MMatchOrders is LibOrder {
 
     struct MatchedOrderFillAmounts {
-        uint256 leftMakerTokenFilledAmount;
-        uint256 leftTakerTokenFilledAmount;
+        uint256 leftMakerAssetFilledAmount;
+        uint256 leftTakerAssetFilledAmount;
         uint256 leftMakerFeeAmountPaid;
         uint256 leftTakerFeeAmountPaid;
-        uint256 rightMakerTokenFilledAmount;
-        uint256 rightTakerTokenFilledAmount;
+        uint256 rightMakerAssetFilledAmount;
+        uint256 rightTakerAssetFilledAmount;
         uint256 rightMakerFeeAmountPaid;
         uint256 rightTakerFeeAmountPaid;
     }
@@ -42,8 +42,8 @@ contract MMatchOrders is LibOrder {
         returns (MatchedOrderFillAmounts memory matchedFillOrderAmounts);
 
     // Match two complementary orders that overlap.
-    // The taker will end up with the maximum amount of left.makerToken
-    // Any right.makerToken that taker would gain because of rounding are
+    // The taker will end up with the maximum amount of left.makerAsset
+    // Any right.makerAsset that taker would gain because of rounding are
     // transfered to right.
     function matchOrders(
         Order memory left,

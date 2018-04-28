@@ -31,6 +31,7 @@ contract MixinSettlement is
     MSettlement,
     MAssetProxyDispatcher,
     LibPartialAmount
+
 {
     bytes ZRX_PROXY_DATA;
 
@@ -95,31 +96,31 @@ contract MixinSettlement is
         // * left.feeRecipient =?= right.feeRecipient
 
         // Not optimized for:
-        // * {left, right}.{makerToken, takerToken} == ZRX
+        // * {left, right}.{MakerAsset, TakerAsset} == ZRX
         // * {left, right}.maker, taker == {left, right}.feeRecipient
 
-        // left.makerToken == right.takerToken
+        // left.MakerAsset == right.TakerAsset
         // Taker should be left with a positive balance (the spread)
         dispatchTransferFrom(
             left.makerAssetData,
             left.makerAddress,
             taker,
-            matchedFillOrderAmounts.leftMakerTokenFilledAmount);
+            matchedFillOrderAmounts.leftMakerAssetFilledAmount);
         dispatchTransferFrom(
             left.makerAssetData,
             taker,
             right.makerAddress,
-            matchedFillOrderAmounts.rightTakerTokenFilledAmount);
+            matchedFillOrderAmounts.rightTakerAssetFilledAmount);
 
-        // right.makerToken == left.takerToken
-        // leftTakerTokenFilledAmount ~ rightMakerTokenFilledAmount
+        // right.MakerAsset == left.TakerAsset
+        // leftTakerAssetFilledAmount ~ rightMakerAssetFilledAmount
         // The change goes to right, not to taker.
-        assert(matchedFillOrderAmounts.rightMakerTokenFilledAmount >= matchedFillOrderAmounts.leftTakerTokenFilledAmount);
+        assert(matchedFillOrderAmounts.rightMakerAssetFilledAmount >= matchedFillOrderAmounts.leftTakerAssetFilledAmount);
         dispatchTransferFrom(
             right.makerAssetData,
             right.makerAddress,
             left.makerAddress,
-            matchedFillOrderAmounts.rightMakerTokenFilledAmount);
+            matchedFillOrderAmounts.rightMakerAssetFilledAmount);
 
         // Maker fees
         dispatchTransferFrom(
@@ -135,7 +136,7 @@ contract MixinSettlement is
 
         // Taker fees
         // If we assume distinct(left, right, taker) and
-        // distinct(makerToken, takerToken, zrx) then the only remaining
+        // distinct(MakerAsset, TakerAsset, zrx) then the only remaining
         // opportunity for optimization is when both feeRecipientAddress' are
         // the same.
         if(left.feeRecipientAddress == right.feeRecipientAddress) {

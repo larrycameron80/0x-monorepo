@@ -30,11 +30,11 @@ import "./MixinMatchOrders.sol";
 contract Exchange is
     MixinExchangeCore,
     MixinSignatureValidator,
-    MixinMatchOrders,
     MixinSettlement,
     MixinWrapperFunctions,
     MixinAssetProxyDispatcher,
-    MixinTransactions
+    MixinTransactions,
+    MixinMatchOrders
 {
     string constant public VERSION = "2.0.1-alpha";
 
