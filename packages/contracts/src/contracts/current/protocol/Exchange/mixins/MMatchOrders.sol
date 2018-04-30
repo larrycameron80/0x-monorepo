@@ -32,9 +32,9 @@ contract MMatchOrders is LibOrder, MExchangeCore {
         private;
 
 
-    function getMatchedFillAmounts(Order memory left, Order memory right)
-        private
-        returns (MatchedOrderFillAmounts memory matchedFillOrderAmounts);
+        function getMatchedFillAmounts(Order memory left, Order memory right, uint8 leftStatus, uint8 rightStatus, uint256 leftFilledAmount, uint256 rightFilledAmount)
+            private
+            returns (uint8 status, MatchedOrderFillAmounts memory matchedFillOrderAmounts);
 
     // Match two complementary orders that overlap.
     // The taker will end up with the maximum amount of left.makerAsset
