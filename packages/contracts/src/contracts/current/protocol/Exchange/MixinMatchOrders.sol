@@ -52,7 +52,7 @@ contract MixinMatchOrders is
     }
 
 
-    function getMatchedFillAmounts(Order memory left, Order memory right, uint256 leftFilledAmount, uint256 rightFilledAmount, uint256 takerAssetFillAmount)
+    function getMatchedFillAmounts(Order memory left, Order memory right, uint8 leftStatus, uint8 rightStatus, uint256 leftFilledAmount, uint256 rightFilledAmount, uint256 takerAssetFillAmount)
         private
         returns (uint8 status, MatchedOrderFillAmounts memory matchedFillOrderAmounts)
     {
@@ -71,17 +71,15 @@ contract MixinMatchOrders is
         {
             // leftRemaining is the constraint: maximally fill left
             (   status,
-                matchedFillOrderAmounts.leftMakerAssetFilledAmount,
-                matchedFillOrderAmounts.leftTakerAssetFilledAmount,
-                matchedFillOrderAmounts.leftMakerFeeAmountPaid,
-                matchedFillOrderAmounts.leftTakerFeeAmountPaid
+                matchedFillOrderAmounts.left
             ) = getFillAmounts(
                 left,
+                leftStatus,
                 leftRemaining,
                 takerAssetFillAmount,
                 msg.sender);
             if(status != uint8(Status.SUCCESS)) {
-                return status;
+                return;
             }
 
             // Compute how much we should fill right to satisfy
@@ -90,66 +88,60 @@ contract MixinMatchOrders is
             uint256 rightFill = getPartialAmount(
                 right.makerAssetAmount,
                 right.takerAssetAmount,
-                matchedFillOrderAmounts.leftMakerAssetFilledAmount);
+                matchedFillOrderAmounts.left.makerAssetFilledAmount);
 
             // Compute right fill amounts
             (   status,
-                matchedFillOrderAmounts.rightMakerAssetFilledAmount,
-                matchedFillOrderAmounts.rightTakerAssetFilledAmount,
-                matchedFillOrderAmounts.rightMakerFeeAmountPaid,
-                matchedFillOrderAmounts.rightTakerFeeAmountPaid
+                matchedFillOrderAmounts.right
             ) = getFillAmounts(
                 right,
+                rightStatus,
                 rightFill,
                 takerAssetFillAmount,
                 msg.sender);
             if(status != uint8(Status.SUCCESS)) {
-                return status;
+                return;
             }
 
             // Unfortunately, this is no longer exact and taker may end up
             // with some left.takerAssets. This will be a rounding error amount.
             // We should probably not bother and just give them to the makers.
-            assert(matchedFillOrderAmounts.rightmakerAssetFilledAmount >= matchedFillOrderAmounts.lefttakerAssetFilledAmount);
+            assert(matchedFillOrderAmounts.right.makerAssetFilledAmount >= matchedFillOrderAmounts.left.takerAssetFilledAmount);
 
             // TODO: Make sure the difference is neglible
 
         } else {
             // rightRemaining is the constraint: maximally fill right
             (   status,
-                matchedFillOrderAmounts.rightmakerAssetFilledAmount,
-                matchedFillOrderAmounts.righttakerAssetFilledAmount,
-                matchedFillOrderAmounts.rightMakerFeeAmountPaid,
-                matchedFillOrderAmounts.rightTakerFeeAmountPaid
+                matchedFillOrderAmounts.right
             ) = getFillAmounts(
                 right,
+                rightStatus,
                 rightRemaining,
                 takerAssetFillAmount,
                 msg.sender);
             if(status != uint8(Status.SUCCESS)) {
-                return status;
+                return;
             }
 
             // We now have rightmakerAssets to fill left with
-            assert(matchedFillOrderAmounts.rightmakerAssetFilledAmount <= /* remainingLeft ? */ leftRemaining);
+            assert(matchedFillOrderAmounts.right.makerAssetFilledAmount <= /* remainingLeft ? */ leftRemaining);
 
             // Fill left with all the right.makerAsset we received
             (   status,
-                matchedFillOrderAmounts.leftMakerAssetFilledAmount,
-                matchedFillOrderAmounts.leftTakerAssetFilledAmount,
-                matchedFillOrderAmounts.leftMakerFeeAmountPaid,
-                matchedFillOrderAmounts.leftTakerFeeAmountPaid
+                matchedFillOrderAmounts.left
             ) = getFillAmounts(
                 left,
-                matchedFillOrderAmounts.rightmakerAssetFilledAmount,
+                leftStatus,
+                matchedFillOrderAmounts.right.makerAssetFilledAmount,
                 takerAssetFillAmount,
                 msg.sender);
             if(status != uint8(Status.SUCCESS)) {
-                return status;
+                return;
             }
 
             // Taker should not have lefttakerAssets left
-            assert(matchedFillOrderAmounts.rightmakerAssetFilledAmount == matchedFillOrderAmounts.lefttakerAssetFilledAmount);
+            assert(matchedFillOrderAmounts.right.makerAssetFilledAmount == matchedFillOrderAmounts.left.takerAssetFilledAmount);
         }
     }
 
@@ -168,26 +160,27 @@ contract MixinMatchOrders is
             uint256 rightFilledAmount)
     {
         // Get left status
-        uint8 status;
+        uint8 leftStatus;
         bytes32 leftOrderHash;
-        (   leftOrderHash,
-            status,
+        (   leftStatus,
+            leftOrderHash,
             leftFilledAmount
-        ) = getOrderStatus(left, leftSignature);
-        if(status != uint8(Status.ORDER_FILLABLE)) {
-            emit ExchangeStatus(uint8(status), leftOrderHash);
-            return 0;
+        ) = getOrderStatus(left);
+        if(leftStatus != uint8(Status.ORDER_FILLABLE)) {
+            emit ExchangeStatus(uint8(leftStatus), leftOrderHash);
+            return;
         }
 
         // Get right status
+        uint8 rightStatus;
         bytes32 rightOrderHash;
-        (   leftOrderHash,
-            status,
+        (   rightStatus,
+            rightOrderHash,
             rightFilledAmount
-        ) = getOrderStatus(left, leftSignature);
-        if(status != uint8(Status.ORDER_FILLABLE)) {
-            emit ExchangeStatus(uint8(status), leftOrderHash);
-            return 0;
+        ) = getOrderStatus(right);
+        if(rightStatus != uint8(Status.ORDER_FILLABLE)) {
+            emit ExchangeStatus(uint8(rightStatus), leftOrderHash);
+            return;
         }
 
         // Fetch taker address
@@ -198,27 +191,26 @@ contract MixinMatchOrders is
 
         // Compute proportional fill amounts
         MatchedOrderFillAmounts memory matchedFillOrderAmounts;
-        (status, matchedFillOrderAmounts) = getMatchedFillAmounts(left, right, leftFilledAmount, rightFilledAmount);
+        uint8 matchedFillAmountsStatus;
+        (matchedFillAmountsStatus, matchedFillOrderAmounts) = getMatchedFillAmounts(left, right, leftStatus, rightStatus, leftFilledAmount, rightFilledAmount);
+        // TODO: Check return value
 
         // Settle matched orders
         settleMatchedOrders(left, right, matchedFillOrderAmounts, takerAddress);
 
+        // TODO: THIS
         // Update exchange internal state
         updateFilledState(
             left,
+            right.makerAddress,
             leftOrderHash,
-            matchedFillOrderAmounts.leftMakerAssetFilledAmount,
-            matchedFillOrderAmounts.leftTakerAssetFilledAmount,
-            matchedFillOrderAmounts.leftMakerFeeAmountPaid,
-            matchedFillOrderAmounts.leftTakerFeeAmountPaid
+            matchedFillOrderAmounts.left
         );
         updateFilledState(
             right,
+            left.makerAddress,
             rightOrderHash,
-            matchedFillOrderAmounts.rightMakerAssetFilledAmount,
-            matchedFillOrderAmounts.rightTakerAssetFilledAmount,
-            matchedFillOrderAmounts.rightMakerFeeAmountPaid,
-            matchedFillOrderAmounts.rightTakerFeeAmountPaid
+            matchedFillOrderAmounts.right
         );
     }
 }

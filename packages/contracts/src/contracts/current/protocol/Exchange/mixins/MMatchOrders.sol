@@ -19,18 +19,13 @@ pragma solidity ^0.4.21;
 pragma experimental ABIEncoderV2;
 
 import "../LibOrder.sol";
+import "./MExchangeCore.sol";
 
-contract MMatchOrders is LibOrder {
+contract MMatchOrders is LibOrder, MExchangeCore {
 
     struct MatchedOrderFillAmounts {
-        uint256 leftMakerAssetFilledAmount;
-        uint256 leftTakerAssetFilledAmount;
-        uint256 leftMakerFeeAmountPaid;
-        uint256 leftTakerFeeAmountPaid;
-        uint256 rightMakerAssetFilledAmount;
-        uint256 rightTakerAssetFilledAmount;
-        uint256 rightMakerFeeAmountPaid;
-        uint256 rightTakerFeeAmountPaid;
+        FillResults left;
+        FillResults right;
     }
 
     function validateMatchOrdersContextOrRevert(Order memory left, Order memory right)

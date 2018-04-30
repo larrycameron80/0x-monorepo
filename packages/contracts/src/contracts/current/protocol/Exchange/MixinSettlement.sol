@@ -105,34 +105,34 @@ contract MixinSettlement is
             left.makerAssetData,
             left.makerAddress,
             taker,
-            matchedFillOrderAmounts.leftMakerAssetFilledAmount);
+            matchedFillOrderAmounts.left.makerAssetFilledAmount);
         dispatchTransferFrom(
             left.makerAssetData,
             taker,
             right.makerAddress,
-            matchedFillOrderAmounts.rightTakerAssetFilledAmount);
+            matchedFillOrderAmounts.right.takerAssetFilledAmount);
 
         // right.MakerAsset == left.TakerAsset
-        // leftTakerAssetFilledAmount ~ rightMakerAssetFilledAmount
+        // left.takerAssetFilledAmount ~ right.makerAssetFilledAmount
         // The change goes to right, not to taker.
-        assert(matchedFillOrderAmounts.rightMakerAssetFilledAmount >= matchedFillOrderAmounts.leftTakerAssetFilledAmount);
+        assert(matchedFillOrderAmounts.right.makerAssetFilledAmount >= matchedFillOrderAmounts.left.takerAssetFilledAmount);
         dispatchTransferFrom(
             right.makerAssetData,
             right.makerAddress,
             left.makerAddress,
-            matchedFillOrderAmounts.rightMakerAssetFilledAmount);
+            matchedFillOrderAmounts.right.makerAssetFilledAmount);
 
         // Maker fees
         dispatchTransferFrom(
             ZRX_PROXY_DATA,
             left.makerAddress,
             left.feeRecipientAddress,
-            matchedFillOrderAmounts.leftMakerFeeAmountPaid);
+            matchedFillOrderAmounts.left.makerFeePaid);
         dispatchTransferFrom(
             ZRX_PROXY_DATA,
             right.makerAddress,
             right.feeRecipientAddress,
-            matchedFillOrderAmounts.rightMakerFeeAmountPaid);
+            matchedFillOrderAmounts.right.makerFeePaid);
 
         // Taker fees
         // If we assume distinct(left, right, taker) and
@@ -145,8 +145,8 @@ contract MixinSettlement is
                 taker,
                 left.feeRecipientAddress,
                 safeAdd(
-                    matchedFillOrderAmounts.leftTakerFeeAmountPaid,
-                    matchedFillOrderAmounts.rightTakerFeeAmountPaid
+                    matchedFillOrderAmounts.left.takerFeePaid,
+                    matchedFillOrderAmounts.right.takerFeePaid
                 )
             );
         } else {
@@ -154,12 +154,12 @@ contract MixinSettlement is
                 ZRX_PROXY_DATA,
                 taker,
                 left.feeRecipientAddress,
-                matchedFillOrderAmounts.leftTakerFeeAmountPaid);
+                matchedFillOrderAmounts.left.takerFeePaid);
             dispatchTransferFrom(
                 ZRX_PROXY_DATA,
                 taker,
                 right.feeRecipientAddress,
-                matchedFillOrderAmounts.rightTakerFeeAmountPaid);
+                matchedFillOrderAmounts.right.takerFeePaid);
         }
     }
 }
