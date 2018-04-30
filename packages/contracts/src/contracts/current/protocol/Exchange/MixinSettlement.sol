@@ -115,6 +115,7 @@ contract MixinSettlement is
         // right.MakerAsset == left.TakerAsset
         // left.takerAssetFilledAmount ~ right.makerAssetFilledAmount
         // The change goes to right, not to taker.
+
         assert(matchedFillOrderAmounts.right.makerAssetFilledAmount >= matchedFillOrderAmounts.left.takerAssetFilledAmount);
         dispatchTransferFrom(
             right.makerAssetData,

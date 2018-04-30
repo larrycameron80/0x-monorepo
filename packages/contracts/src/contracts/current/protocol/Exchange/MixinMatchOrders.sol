@@ -52,7 +52,7 @@ contract MixinMatchOrders is
     }
 
 
-    function getMatchedFillAmounts(Order memory left, Order memory right, uint8 leftStatus, uint8 rightStatus, uint256 leftFilledAmount, uint256 rightFilledAmount, uint256 takerAssetFillAmount)
+    function getMatchedFillAmounts(Order memory left, Order memory right, uint8 leftStatus, uint8 rightStatus, uint256 leftFilledAmount, uint256 rightFilledAmount)
         private
         returns (uint8 status, MatchedOrderFillAmounts memory matchedFillOrderAmounts)
     {
@@ -75,8 +75,8 @@ contract MixinMatchOrders is
             ) = getFillAmounts(
                 left,
                 leftStatus,
+                leftFilledAmount,
                 leftRemaining,
-                takerAssetFillAmount,
                 msg.sender);
             if(status != uint8(Status.SUCCESS)) {
                 return;
@@ -96,8 +96,8 @@ contract MixinMatchOrders is
             ) = getFillAmounts(
                 right,
                 rightStatus,
+                rightFilledAmount,
                 rightFill,
-                takerAssetFillAmount,
                 msg.sender);
             if(status != uint8(Status.SUCCESS)) {
                 return;
@@ -117,8 +117,8 @@ contract MixinMatchOrders is
             ) = getFillAmounts(
                 right,
                 rightStatus,
+                rightFilledAmount,
                 rightRemaining,
-                takerAssetFillAmount,
                 msg.sender);
             if(status != uint8(Status.SUCCESS)) {
                 return;
@@ -133,8 +133,8 @@ contract MixinMatchOrders is
             ) = getFillAmounts(
                 left,
                 leftStatus,
+                leftFilledAmount,
                 matchedFillOrderAmounts.right.makerAssetFilledAmount,
-                takerAssetFillAmount,
                 msg.sender);
             if(status != uint8(Status.SUCCESS)) {
                 return;
