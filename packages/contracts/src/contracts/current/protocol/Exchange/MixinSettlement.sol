@@ -27,11 +27,11 @@ import "./mixins/MMatchOrders.sol";
 
 /// @dev Provides MixinSettlement
 contract MixinSettlement is
+    LibOrder,
+    LibPartialAmount,
     MMatchOrders,
     MSettlement,
-    MAssetProxyDispatcher,
-    LibPartialAmount
-
+    MAssetProxyDispatcher
 {
     bytes ZRX_PROXY_DATA;
 

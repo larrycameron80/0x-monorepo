@@ -32,14 +32,14 @@ import "../../utils/SafeMath/SafeMath.sol";
 /// @dev Consumes MSettlement
 /// @dev Consumes MSignatureValidator
 contract MixinExchangeCore is
+    SafeMath,
+    LibStatus,
     LibOrder,
+    LibPartialAmount,
     MExchangeCore,
     MSettlement,
     MSignatureValidator,
-    MTransactions,
-    SafeMath,
-    LibStatus,
-    LibPartialAmount
+    MTransactions
 {
     // Mapping of orderHash => amount of takerAsset already bought by maker
     mapping (bytes32 => uint256) public filled;
@@ -77,9 +77,9 @@ contract MixinExchangeCore is
         uint256 makerEpoch
     );
 
-    /*
-    * Core exchange functions
-    */
+
+  // Core exchange functions
+
 
     function getOrderStatus(Order memory order)
         public

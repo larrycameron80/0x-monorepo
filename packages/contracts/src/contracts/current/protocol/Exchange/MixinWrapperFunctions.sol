@@ -26,10 +26,11 @@ import "../../utils/LibBytes/LibBytes.sol";
 
 /// @dev Consumes MExchangeCore
 contract MixinWrapperFunctions is
-    MExchangeCore,
     SafeMath,
     LibBytes,
-    LibPartialAmount
+    LibOrder,
+    LibPartialAmount,
+    MExchangeCore
 {
     /// @dev Fills the input order. Reverts if exact takerAssetFillAmount not filled.
     /// @param order Order struct containing order specifications.

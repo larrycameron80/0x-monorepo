@@ -25,16 +25,15 @@ import "./LibPartialAmount.sol";
 import "../../utils/LibBytes/LibBytes.sol";
 
 contract MixinMatchOrders is
-    LibOrder,
-    MExchangeCore,
-    MMatchOrders,
-    MSettlement,
-    MTransactions,
     SafeMath,
     LibBytes,
     LibStatus,
-    LibPartialAmount
-
+    LibOrder,
+    LibPartialAmount,
+    MExchangeCore,
+    MMatchOrders,
+    MSettlement,
+    MTransactions
     {
 
     function validateMatchOrdersContextOrRevert(Order memory left, Order memory right)
