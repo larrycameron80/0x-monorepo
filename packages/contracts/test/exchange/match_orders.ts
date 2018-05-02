@@ -37,7 +37,8 @@ describe.only('MatchOrders', () => {
     let makerAddressRight: string;
     let owner: string;
     let takerAddress: string;
-    let feeRecipientAddress: string;
+    let feeRecipientAddressLeft: string;
+    let feeRecipientAddressRight: string;
 
     let erc20TokenA: DummyERC20TokenContract;
     let erc20TokenB: DummyERC20TokenContract;
@@ -70,7 +71,8 @@ describe.only('MatchOrders', () => {
             makerAddressLeft,
             makerAddressRight,
             takerAddress,
-            feeRecipientAddress,
+            feeRecipientAddressLeft,
+            feeRecipientAddressRight,
         ] = accounts);
 
         erc20Wrapper = new ERC20Wrapper(deployer, provider, usedAddresses, owner);
@@ -113,7 +115,6 @@ describe.only('MatchOrders', () => {
         const defaultOrderParams = {
             ...constants.STATIC_ORDER_PARAMS,
             exchangeAddress: exchange.address,
-            feeRecipientAddress,
             makerAssetData: assetProxyUtils.encodeERC20ProxyData(defaultMakerAssetAddress),
             takerAssetData: assetProxyUtils.encodeERC20ProxyData(defaultTakerAssetAddress),
         };
@@ -147,6 +148,7 @@ describe.only('MatchOrders', () => {
                 takerAssetData: assetProxyUtils.encodeERC20ProxyData(defaultTakerAssetAddress),
                 makerAssetAmount: new BigNumber(5),
                 takerAssetAmount: new BigNumber(10),
+                feeRecipientAddress: feeRecipientAddressLeft,
             });
 
             const signedOrderRight = orderFactoryRight.newSignedOrder({
@@ -155,6 +157,7 @@ describe.only('MatchOrders', () => {
                 takerAssetData: assetProxyUtils.encodeERC20ProxyData(defaultMakerAssetAddress),
                 makerAssetAmount: new BigNumber(10),
                 takerAssetAmount: new BigNumber(2),
+                feeRecipientAddress: feeRecipientAddressRight,
             });
 
             const takerAssetFilledAmountBefore = await exchangeWrapper.getTakerAssetFilledAmountAsync(
@@ -176,8 +179,6 @@ describe.only('MatchOrders', () => {
             console.log('amountBoughtByLeftMaker = ' + amountBoughtByLeftMaker);
             console.log('amountBoughtByRightMaker = ' + amountBoughtByRightMaker);
 
-            //    expect(makerAmountBoughtAfter).to.be.bignumber.equal(takerAssetFillAmount);
-
             const newBalances = await erc20Wrapper.getBalancesAsync();
 
             const amountSoldByLeftMaker = amountBoughtByLeftMaker
@@ -196,14 +197,6 @@ describe.only('MatchOrders', () => {
 
             const amountReceivedByTaker = amountSoldByLeftMaker.minus(amountReceivedByRightMaker);
 
-            /*
-            const makerFeePaid = signedOrder.makerFee
-                .times(makerAssetFilledAmount)
-                .dividedToIntegerBy(signedOrder.makerAssetAmount);
-            const takerFeePaid = signedOrder.takerFee
-                .times(makerAssetFilledAmount)
-                .dividedToIntegerBy(signedOrder.makerAssetAmount);
-*/
             console.log('amountSoldByLeftMaker = ' + amountSoldByLeftMaker);
             console.log('amountSoldByRightMaker = ' + amountSoldByRightMaker);
             console.log('amountReceivedByLeftMaker = ' + amountReceivedByLeftMaker);
@@ -247,30 +240,46 @@ describe.only('MatchOrders', () => {
                 erc20Balances[takerAddress][takerAssetAddressRight].add(amountReceivedByTaker),
             );
 
-            // Verify Maker's takerAssets
+            // Verify Fees - Left Maker
 
-            //    expect(newBalances[makerAddressLeft][takerAssetAddressLeft]).to.be.bignumber.equal(
-            //        erc20Balances[makerAddressLeft][takerAssetAddressLeft].add(takerAssetFillAmount),
-            //    );
-
-            /*
-            expect(newBalances[makerAddress][zrxToken.address]).to.be.bignumber.equal(
-                erc20Balances[makerAddress][zrxToken.address].minus(makerFeePaid),
-            );
-            expect(newBalances[takerAddress][defaultTakerAssetAddress]).to.be.bignumber.equal(
-                erc20Balances[takerAddress][defaultTakerAssetAddress].minus(takerAssetFillAmount),
-            );
-            expect(newBalances[takerAddress][defaultMakerAssetAddress]).to.be.bignumber.equal(
-                erc20Balances[takerAddress][defaultMakerAssetAddress].add(makerAssetFilledAmount),
+            const leftMakerFeePaid = signedOrderLeft.makerFee
+                .times(amountSoldByLeftMaker)
+                .dividedToIntegerBy(signedOrderLeft.makerAssetAmount);
+            expect(newBalances[makerAddressLeft][zrxToken.address]).to.be.bignumber.equal(
+                erc20Balances[makerAddressLeft][zrxToken.address].minus(leftMakerFeePaid),
             );
 
-            /*
+            // Verify Fees - Right Maker
+            const rightMakerFeePaid = signedOrderRight.makerFee
+                .times(amountSoldByRightMaker)
+                .dividedToIntegerBy(signedOrderRight.makerAssetAmount);
+            expect(newBalances[makerAddressRight][zrxToken.address]).to.be.bignumber.equal(
+                erc20Balances[makerAddressRight][zrxToken.address].minus(rightMakerFeePaid),
+            );
+
+            // Verify Fees - Taker
+            const takerFeePaidLeft = signedOrderLeft.takerFee
+                .times(amountSoldByLeftMaker)
+                .dividedToIntegerBy(signedOrderLeft.makerAssetAmount);
+            const takerFeePaidRight = signedOrderRight.takerFee
+                .times(amountSoldByRightMaker)
+                .dividedToIntegerBy(signedOrderRight.makerAssetAmount);
+            const takerFeePaid = takerFeePaidLeft.add(takerFeePaidRight);
             expect(newBalances[takerAddress][zrxToken.address]).to.be.bignumber.equal(
                 erc20Balances[takerAddress][zrxToken.address].minus(takerFeePaid),
             );
-            expect(newBalances[feeRecipientAddress][zrxToken.address]).to.be.bignumber.equal(
-                erc20Balances[feeRecipientAddress][zrxToken.address].add(makerFeePaid.add(takerFeePaid)),
-            );           */
+
+            // Verify Fees - Left Fee Recipient
+            const feesReceivedLeft = leftMakerFeePaid.add(takerFeePaidLeft);
+            expect(newBalances[feeRecipientAddressLeft][zrxToken.address]).to.be.bignumber.equal(
+                erc20Balances[feeRecipientAddressLeft][zrxToken.address].add(feesReceivedLeft),
+            );
+
+            // Verify Fees - Right Fee Receipient
+            const feesReceivedRight = rightMakerFeePaid.add(takerFeePaidRight);
+            expect(newBalances[feeRecipientAddressRight][zrxToken.address]).to.be.bignumber.equal(
+                erc20Balances[feeRecipientAddressRight][zrxToken.address].add(feesReceivedLeft),
+            );
         });
     });
 }); // tslint:disable-line:max-file-line-count
