@@ -140,21 +140,21 @@ describe.only('MatchOrders', () => {
             erc20Balances = await erc20Wrapper.getBalancesAsync();
         });
 
-        it('should transfer the correct amounts when makerAssetAmount === takerAssetAmount', async () => {
+        it('should transfer the correct amounts when orders fill each other perfectly', async () => {
             const signedOrderLeft = orderFactoryLeft.newSignedOrder({
                 makerAddress: makerAddressLeft,
                 makerAssetData: assetProxyUtils.encodeERC20ProxyData(defaultMakerAssetAddress),
                 takerAssetData: assetProxyUtils.encodeERC20ProxyData(defaultTakerAssetAddress),
-                makerAssetAmount: ZeroEx.toBaseUnitAmount(new BigNumber(100), 18),
-                takerAssetAmount: ZeroEx.toBaseUnitAmount(new BigNumber(10), 18),
+                makerAssetAmount: new BigNumber(5),
+                takerAssetAmount: new BigNumber(10),
             });
 
             const signedOrderRight = orderFactoryRight.newSignedOrder({
                 makerAddress: makerAddressRight,
                 makerAssetData: assetProxyUtils.encodeERC20ProxyData(defaultTakerAssetAddress),
                 takerAssetData: assetProxyUtils.encodeERC20ProxyData(defaultMakerAssetAddress),
-                makerAssetAmount: ZeroEx.toBaseUnitAmount(new BigNumber(10), 18),
-                takerAssetAmount: ZeroEx.toBaseUnitAmount(new BigNumber(90), 18),
+                makerAssetAmount: new BigNumber(10),
+                takerAssetAmount: new BigNumber(2),
             });
 
             const takerAssetFilledAmountBefore = await exchangeWrapper.getTakerAssetFilledAmountAsync(
@@ -165,36 +165,50 @@ describe.only('MatchOrders', () => {
             await exchangeWrapper.matchOrdersAsync(signedOrderLeft, signedOrderRight, takerAddress);
 
             // Find the amount bought from each order
-            const amountBoughtFromLeftOrder = await exchangeWrapper.getTakerAssetFilledAmountAsync(
+            const amountBoughtByLeftMaker = await exchangeWrapper.getTakerAssetFilledAmountAsync(
                 orderUtils.getOrderHashHex(signedOrderLeft),
             );
 
-            const amountBoughtFromRightOrder = await exchangeWrapper.getTakerAssetFilledAmountAsync(
+            const amountBoughtByRightMaker = await exchangeWrapper.getTakerAssetFilledAmountAsync(
                 orderUtils.getOrderHashHex(signedOrderRight),
             );
+
+            console.log('amountBoughtByLeftMaker = ' + amountBoughtByLeftMaker);
+            console.log('amountBoughtByRightMaker = ' + amountBoughtByRightMaker);
 
             //    expect(makerAmountBoughtAfter).to.be.bignumber.equal(takerAssetFillAmount);
 
             const newBalances = await erc20Wrapper.getBalancesAsync();
 
-            const makerAssetFilledAmountLeft = amountBoughtFromLeftOrder
+            const amountSoldByLeftMaker = amountBoughtByLeftMaker
                 .times(signedOrderLeft.makerAssetAmount)
                 .dividedToIntegerBy(signedOrderLeft.takerAssetAmount);
 
-            const makerAssetFilledAmountRight = amountBoughtFromRightOrder
+            const amountSoldByRightMaker = amountBoughtByRightMaker
                 .times(signedOrderRight.makerAssetAmount)
                 .dividedToIntegerBy(signedOrderRight.takerAssetAmount);
 
-            /*
+            const amountReceivedByRightMaker = amountBoughtByLeftMaker
+                .times(signedOrderRight.takerAssetAmount)
+                .dividedToIntegerBy(signedOrderRight.makerAssetAmount);
 
+            const amountReceivedByLeftMaker = amountSoldByRightMaker;
+
+            const amountReceivedByTaker = amountSoldByLeftMaker.minus(amountReceivedByRightMaker);
+
+            /*
             const makerFeePaid = signedOrder.makerFee
                 .times(makerAssetFilledAmount)
                 .dividedToIntegerBy(signedOrder.makerAssetAmount);
             const takerFeePaid = signedOrder.takerFee
                 .times(makerAssetFilledAmount)
                 .dividedToIntegerBy(signedOrder.makerAssetAmount);
-
 */
+            console.log('amountSoldByLeftMaker = ' + amountSoldByLeftMaker);
+            console.log('amountSoldByRightMaker = ' + amountSoldByRightMaker);
+            console.log('amountReceivedByLeftMaker = ' + amountReceivedByLeftMaker);
+            console.log('amountReceivedByRightMaker = ' + amountReceivedByRightMaker);
+            console.log('amountReceivedByTaker = ' + amountReceivedByTaker);
 
             const makerAssetAddressLeft = defaultMakerAssetAddress;
             const takerAssetAddressLeft = defaultTakerAssetAddress;
@@ -203,11 +217,34 @@ describe.only('MatchOrders', () => {
 
             // Verify Makers makerAsset
             expect(newBalances[makerAddressLeft][makerAssetAddressLeft]).to.be.bignumber.equal(
-                erc20Balances[makerAddressLeft][makerAssetAddressLeft].minus(makerAssetFilledAmountLeft),
+                erc20Balances[makerAddressLeft][makerAssetAddressLeft].minus(amountSoldByLeftMaker),
             );
 
             expect(newBalances[makerAddressRight][makerAssetAddressRight]).to.be.bignumber.equal(
-                erc20Balances[makerAddressRight][makerAssetAddressRight].minus(makerAssetFilledAmountRight),
+                erc20Balances[makerAddressRight][makerAssetAddressRight].minus(amountSoldByRightMaker),
+            );
+
+            // Verify Maker's takerAssetAddressLeft
+            expect(newBalances[makerAddressLeft][takerAssetAddressLeft]).to.be.bignumber.equal(
+                erc20Balances[makerAddressLeft][takerAssetAddressLeft].add(amountReceivedByLeftMaker),
+            );
+
+            expect(newBalances[makerAddressRight][takerAssetAddressRight]).to.be.bignumber.equal(
+                erc20Balances[makerAddressRight][takerAssetAddressRight].add(amountReceivedByRightMaker),
+            );
+
+            // Verify Taker's assets
+            expect(newBalances[takerAddress][makerAssetAddressLeft]).to.be.bignumber.equal(
+                erc20Balances[takerAddress][makerAssetAddressLeft].add(amountReceivedByTaker),
+            );
+            expect(newBalances[takerAddress][takerAssetAddressLeft]).to.be.bignumber.equal(
+                erc20Balances[takerAddress][takerAssetAddressLeft],
+            );
+            expect(newBalances[takerAddress][makerAssetAddressRight]).to.be.bignumber.equal(
+                erc20Balances[takerAddress][makerAssetAddressRight],
+            );
+            expect(newBalances[takerAddress][takerAssetAddressRight]).to.be.bignumber.equal(
+                erc20Balances[takerAddress][takerAssetAddressRight].add(amountReceivedByTaker),
             );
 
             // Verify Maker's takerAssets
