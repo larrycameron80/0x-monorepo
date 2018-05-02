@@ -136,18 +136,13 @@ describe.only('MatchOrders', () => {
     afterEach(async () => {
         await blockchainLifecycle.revertAsync();
     });
-    describe('internal functions', () => {
-        it('should include transferViaTokenTransferProxy', () => {
-            expect((exchange as any).transferViaTokenTransferProxy).to.be.undefined();
-        });
-    });
 
     describe('matchOrders', () => {
         beforeEach(async () => {
             erc20Balances = await erc20Wrapper.getBalancesAsync();
         });
 
-        it('should transfer the correct amounts when orders fill each other perfectly', async () => {
+        it('should transfer the correct amounts when orders completely fill each other', async () => {
             const signedOrderLeft = orderFactoryLeft.newSignedOrder({
                 makerAddress: makerAddressLeft,
                 makerAssetData: assetProxyUtils.encodeERC20ProxyData(defaultMakerAssetAddress),
@@ -176,5 +171,103 @@ describe.only('MatchOrders', () => {
                 erc20Balances,
             );
         });
+
+        it('should transfer the correct amounts when left order fills right order', async () => {
+            const signedOrderLeft = orderFactoryLeft.newSignedOrder({
+                makerAddress: makerAddressLeft,
+                makerAssetData: assetProxyUtils.encodeERC20ProxyData(defaultMakerAssetAddress),
+                takerAssetData: assetProxyUtils.encodeERC20ProxyData(defaultTakerAssetAddress),
+                makerAssetAmount: new BigNumber(5),
+                takerAssetAmount: new BigNumber(10),
+                feeRecipientAddress: feeRecipientAddressLeft,
+            });
+
+            const signedOrderRight = orderFactoryRight.newSignedOrder({
+                makerAddress: makerAddressRight,
+                makerAssetData: assetProxyUtils.encodeERC20ProxyData(defaultTakerAssetAddress),
+                takerAssetData: assetProxyUtils.encodeERC20ProxyData(defaultMakerAssetAddress),
+                makerAssetAmount: new BigNumber(20),
+                takerAssetAmount: new BigNumber(4),
+                feeRecipientAddress: feeRecipientAddressRight,
+            });
+
+            return matchOrderTester.matchOrders(
+                signedOrderLeft,
+                signedOrderRight,
+                defaultMakerAssetAddress,
+                defaultTakerAssetAddress,
+                zrxToken.address,
+                takerAddress,
+                erc20Balances,
+            );
+        });
+        /*
+        it('should transfer the correct amounts when right order fills left order', async () => {
+            const signedOrderLeft = orderFactoryLeft.newSignedOrder({
+                makerAddress: makerAddressLeft,
+                makerAssetData: assetProxyUtils.encodeERC20ProxyData(defaultMakerAssetAddress),
+                takerAssetData: assetProxyUtils.encodeERC20ProxyData(defaultTakerAssetAddress),
+                makerAssetAmount: new BigNumber(50),
+                takerAssetAmount: new BigNumber(100),
+                feeRecipientAddress: feeRecipientAddressLeft,
+            });
+
+            const signedOrderRight = orderFactoryRight.newSignedOrder({
+                makerAddress: makerAddressRight,
+                makerAssetData: assetProxyUtils.encodeERC20ProxyData(defaultTakerAssetAddress),
+                takerAssetData: assetProxyUtils.encodeERC20ProxyData(defaultMakerAssetAddress),
+                makerAssetAmount: new BigNumber(10),
+                takerAssetAmount: new BigNumber(2),
+                feeRecipientAddress: feeRecipientAddressRight,
+            });
+
+            return matchOrderTester.matchOrders(
+                signedOrderLeft,
+                signedOrderRight,
+                defaultMakerAssetAddress,
+                defaultTakerAssetAddress,
+                zrxToken.address,
+                takerAddress,
+                erc20Balances,
+            );
+        });*/
+
+        /*
+        it('should throw oin this case', async () => {
+            const signedOrderLeft = orderFactoryLeft.newSignedOrder({
+                makerAddress: makerAddressLeft,
+                makerAssetData: assetProxyUtils.encodeERC20ProxyData(defaultMakerAssetAddress),
+                takerAssetData: assetProxyUtils.encodeERC20ProxyData(defaultTakerAssetAddress),
+                makerAssetAmount: new BigNumber(50),
+                takerAssetAmount: new BigNumber(100),
+                feeRecipientAddress: feeRecipientAddressLeft,
+            });
+
+            const signedOrderRight = orderFactoryRight.newSignedOrder({
+                makerAddress: makerAddressRight,
+                makerAssetData: assetProxyUtils.encodeERC20ProxyData(defaultTakerAssetAddress),
+                takerAssetData: assetProxyUtils.encodeERC20ProxyData(defaultMakerAssetAddress),
+                makerAssetAmount: new BigNumber(10),
+                takerAssetAmount: new BigNumber(2),
+                feeRecipientAddress: feeRecipientAddressRight,
+            });
+
+            return matchOrderTester.matchOrders(
+                signedOrderLeft,
+                signedOrderRight,
+                defaultMakerAssetAddress,
+                defaultTakerAssetAddress,
+                zrxToken.address,
+                takerAddress,
+                erc20Balances,
+            );
+        });*/
+
+        /*
+
+        it('should transfer the correct amounts in consecutive fills where left completely fills right.')
+        it('should transfer the correct amounts in consecutive fills where right completely fills left.')
+
+        */
     });
 }); // tslint:disable-line:max-file-line-count

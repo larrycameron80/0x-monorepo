@@ -61,21 +61,31 @@ contract MixinMatchOrders is
         // The constraint can be either on the left or on the right. We need to
         // determine where it is.
 
-        uint256 leftRemaining = safeSub(left.takerAssetAmount, leftFilledAmount);
-        uint256 rightRemaining = safeSub(right.takerAssetAmount, rightFilledAmount);
+        uint256 ratio = 0;
+
+
+        uint256 rightTakerAssetAmountRemaining = safeSub(right.takerAssetAmount, rightFilledAmount);
+        ratio = safeDiv(rightTakerAssetAmountRemaining, right.takerAssetAmount);
+        uint256 rightMakerAssetAmountRemaining = safeMul(right.makerAssetAmount, ratio);
+
+        uint256 leftTakerAssetAmountRemaining = safeSub(left.takerAssetAmount, leftFilledAmount);
+        ratio = safeDiv(leftTakerAssetAmountRemaining, left.takerAssetAmount);
+        uint256 leftMakerAssetAmountRemaining = safeMul(left.makerAssetAmount, ratio);
+
 
         // TODO: SafeMath
-        if(right.makerAssetAmount * rightRemaining <
-            right.takerAssetAmount * leftRemaining)
+        //         if(safeMul(right.makerAssetAmount, rightTakerAssetAmountRemaining) < safeMul(right.takerAssetAmount, leftTakerAssetAmountRemaining))
+
+        if(safeMul(leftTakerAssetAmountRemaining, right.takerAssetAmount) <= safeMul(rightTakerAssetAmountRemaining, right.makerAssetAmount))
         {
-            // leftRemaining is the constraint: maximally fill left
+            // leftTakerAssetAmountRemaining is the constraint: maximally fill left
             (   status,
                 matchedFillOrderAmounts.left
             ) = getFillAmounts(
                 left,
                 leftStatus,
                 leftFilledAmount,
-                leftRemaining,
+                leftTakerAssetAmountRemaining,
                 msg.sender);
             if(status != uint8(Status.SUCCESS)) {
                 return;
@@ -85,9 +95,9 @@ contract MixinMatchOrders is
             // lefttakerAssetFilledAmount
             // TODO: Check if rounding is in the correct direction.
             uint256 rightFill = getPartialAmount(
-                right.makerAssetAmount,
                 right.takerAssetAmount,
-                matchedFillOrderAmounts.left.makerAssetFilledAmount);
+                right.makerAssetAmount,
+                matchedFillOrderAmounts.left.takerAssetFilledAmount);
 
             // Compute right fill amounts
             (   status,
@@ -110,21 +120,22 @@ contract MixinMatchOrders is
             // TODO: Make sure the difference is neglible
 
         } else {
-            // rightRemaining is the constraint: maximally fill right
+            revert();
+            // rightTakerAssetAmountRemaining is the constraint: maximally fill right
             (   status,
                 matchedFillOrderAmounts.right
             ) = getFillAmounts(
                 right,
                 rightStatus,
                 rightFilledAmount,
-                rightRemaining,
+                rightTakerAssetAmountRemaining,
                 msg.sender);
             if(status != uint8(Status.SUCCESS)) {
                 return;
             }
 
             // We now have rightmakerAssets to fill left with
-            assert(matchedFillOrderAmounts.right.makerAssetFilledAmount <= /* remainingLeft ? */ leftRemaining);
+            assert(matchedFillOrderAmounts.right.makerAssetFilledAmount <= /* remainingLeft ? */ leftTakerAssetAmountRemaining);
 
             // Fill left with all the right.makerAsset we received
             (   status,
@@ -192,7 +203,9 @@ contract MixinMatchOrders is
         MatchedOrderFillAmounts memory matchedFillOrderAmounts;
         uint8 matchedFillAmountsStatus;
         (matchedFillAmountsStatus, matchedFillOrderAmounts) = getMatchedFillAmounts(left, right, leftStatus, rightStatus, leftFilledAmount, rightFilledAmount);
-        // TODO: Check return value
+        if(matchedFillAmountsStatus != uint8(Status.SUCCESS)) {
+            return;
+        }
 
         // Settle matched orders
         settleMatchedOrders(left, right, matchedFillOrderAmounts, takerAddress);

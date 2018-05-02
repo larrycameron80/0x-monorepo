@@ -132,7 +132,6 @@ export class MatchOrderTester {
         );
 
         // Verify Fees - Left Maker
-
         const leftMakerFeePaid = signedOrderLeft.makerFee
             .times(amountSoldByLeftMaker)
             .dividedToIntegerBy(signedOrderLeft.makerAssetAmount);
@@ -169,7 +168,7 @@ export class MatchOrderTester {
         // Verify Fees - Right Fee Receipient
         const feesReceivedRight = rightMakerFeePaid.add(takerFeePaidRight);
         expect(newBalances[feeRecipientAddressRight][feeTokenAddress]).to.be.bignumber.equal(
-            erc20BalancesByOwner[feeRecipientAddressRight][feeTokenAddress].add(feesReceivedLeft),
+            erc20BalancesByOwner[feeRecipientAddressRight][feeTokenAddress].add(feesReceivedRight),
         );
     }
 }
