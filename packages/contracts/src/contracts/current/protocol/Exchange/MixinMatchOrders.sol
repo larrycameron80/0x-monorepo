@@ -120,7 +120,6 @@ contract MixinMatchOrders is
             // TODO: Make sure the difference is neglible
 
         } else {
-            revert();
             // rightTakerAssetAmountRemaining is the constraint: maximally fill right
             (   status,
                 matchedFillOrderAmounts.right

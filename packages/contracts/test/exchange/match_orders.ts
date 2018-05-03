@@ -201,7 +201,7 @@ describe.only('MatchOrders', () => {
                 erc20Balances,
             );
         });
-        /*
+
         it('should transfer the correct amounts when right order fills left order', async () => {
             const signedOrderLeft = orderFactoryLeft.newSignedOrder({
                 makerAddress: makerAddressLeft,
@@ -230,7 +230,7 @@ describe.only('MatchOrders', () => {
                 takerAddress,
                 erc20Balances,
             );
-        });*/
+        });
 
         /*
         it('should throw oin this case', async () => {
