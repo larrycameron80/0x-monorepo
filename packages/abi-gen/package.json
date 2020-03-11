@@ -31,7 +31,7 @@
         "glob": "^7.1.2",
         "handlebars": "^4.0.11",
         "lodash": "^4.17.4",
-        "mkdirp": "^0.5.1",
+        "mkdirp": "^1.0.0",
         "to-snake-case": "^1.0.0",
         "yargs": "^10.0.3"
     },
