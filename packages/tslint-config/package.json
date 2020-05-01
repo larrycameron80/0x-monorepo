@@ -1,49 +1,53 @@
 {
-    "name": "@0xproject/tslint-config",
-    "version": "0.4.16",
-    "description": "Lint rules related to 0xProject for TSLint",
-    "main": "tslint.json",
-    "scripts": {
-        "build:watch": "tsc -w",
-        "build": "tsc && copyfiles -u 2 './lib/monorepo_scripts/**/*' ./scripts",
-        "clean": "shx rm -rf lib scripts",
-        "lint": "tslint --project . 'rules/**/*.ts'",
-        "manual:postpublish": "yarn build; node ./scripts/postpublish.js"
-    },
-    "repository": {
-        "type": "git",
-        "url": "git://github.com/0xProject/0x-monorepo.git"
-    },
-    "keywords": [
-        "tslint",
-        "config",
-        "0xProject",
-        "typescript",
-        "ts"
-    ],
-    "author": {
-        "name": "Fabio Berger",
-        "email": "fabio@0xproject.com"
-    },
-    "license": "Apache-2.0",
-    "bugs": {
-        "url": "https://github.com/0xProject/0x-monorepo/issues"
-    },
-    "homepage": "https://github.com/0xProject/0x-monorepo/packages/tslint-config/README.md",
-    "devDependencies": {
-        "@0xproject/monorepo-scripts": "^0.1.18",
-        "@types/lodash": "4.14.104",
-        "copyfiles": "^1.2.0",
-        "shx": "^0.2.2",
-        "typescript": "2.7.1"
-    },
-    "dependencies": {
-        "lodash": "^4.17.4",
-        "tslint": "5.8.0",
-        "tslint-eslint-rules": "^4.1.1",
-        "tslint-react": "^3.2.0"
-    },
-    "publishConfig": {
-        "access": "public"
-    }
+  "name": "@0xproject/tslint-config",
+  "version": "0.4.16",
+  "description": "Lint rules related to 0xProject for TSLint",
+  "main": "tslint.json",
+  "scripts": {
+    "build:watch": "tsc -w",
+    "build": "tsc && copyfiles -u 2 './lib/monorepo_scripts/**/*' ./scripts",
+    "clean": "shx rm -rf lib scripts",
+    "lint": "tslint --project . 'rules/**/*.ts'",
+    "manual:postpublish": "yarn build; node ./scripts/postpublish.js",
+    "snyk-protect": "snyk protect",
+    "prepublish": "npm run snyk-protect"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/0xProject/0x-monorepo.git"
+  },
+  "keywords": [
+    "tslint",
+    "config",
+    "0xProject",
+    "typescript",
+    "ts"
+  ],
+  "author": {
+    "name": "Fabio Berger",
+    "email": "fabio@0xproject.com"
+  },
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/0xProject/0x-monorepo/issues"
+  },
+  "homepage": "https://github.com/0xProject/0x-monorepo/packages/tslint-config/README.md",
+  "devDependencies": {
+    "@0xproject/monorepo-scripts": "^0.1.18",
+    "@types/lodash": "4.14.104",
+    "copyfiles": "^1.2.0",
+    "shx": "^0.2.2",
+    "typescript": "2.7.1"
+  },
+  "dependencies": {
+    "lodash": "^4.17.4",
+    "tslint": "5.8.0",
+    "tslint-eslint-rules": "^4.1.1",
+    "tslint-react": "^3.2.0",
+    "snyk": "^1.316.1"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "snyk": true
 }
