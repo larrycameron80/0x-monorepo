@@ -50,8 +50,8 @@
         "basscss": "^8.0.3",
         "lodash": "^4.17.4",
         "material-ui": "^0.17.1",
-        "react": "15.6.1",
-        "react-dom": "15.6.1",
+        "react": "16.5.0",
+        "react-dom": "16.5.0",
         "react-tap-event-plugin": "^2.0.1"
     }
 }
