@@ -44,7 +44,7 @@
         "react": "15.6.1",
         "react-dom": "15.6.1",
         "react-highlight": "0xproject/react-highlight",
-        "react-markdown": "^3.2.2",
+        "react-markdown": "^5.0.0",
         "react-scroll": "^1.5.2",
         "react-tap-event-plugin": "^2.0.1"
     },
