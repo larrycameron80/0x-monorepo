@@ -33,7 +33,7 @@
         "lodash": "^4.17.4",
         "mkdirp": "^0.5.1",
         "to-snake-case": "^1.0.0",
-        "yargs": "^10.0.3"
+        "yargs": "^16.0.0"
     },
     "devDependencies": {
         "@0xproject/monorepo-scripts": "^0.1.18",
