@@ -81,10 +81,10 @@
         "lodash": "^4.17.4",
         "require-from-string": "^2.0.1",
         "semver": "^5.5.0",
-        "solc": "^0.4.23",
+        "solc": "^0.5.13",
         "web3": "^0.20.0",
         "web3-eth-abi": "^1.0.0-beta.24",
-        "yargs": "^10.0.3"
+        "yargs": "^16.0.0"
     },
     "publishConfig": {
         "access": "public"
