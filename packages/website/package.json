@@ -26,7 +26,7 @@
         "blockies": "^0.0.2",
         "deep-equal": "^1.0.1",
         "ethereumjs-util": "^5.1.1",
-        "find-versions": "^2.0.0",
+        "find-versions": "^4.0.0",
         "jsonschema": "^1.2.0",
         "less": "^2.7.2",
         "lodash": "^4.17.4",
