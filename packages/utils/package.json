@@ -38,7 +38,7 @@
         "ethers": "^3.0.15",
         "js-sha3": "^0.7.0",
         "lodash": "^4.17.4",
-        "web3": "^0.20.0"
+        "web3": "^1.2.0"
     },
     "publishConfig": {
         "access": "public"
