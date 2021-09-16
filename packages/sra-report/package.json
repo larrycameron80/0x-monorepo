@@ -36,8 +36,8 @@
         "@0xproject/utils": "^0.5.2",
         "chalk": "^2.3.0",
         "lodash": "^4.17.4",
-        "newman": "^3.9.3",
-        "yargs": "^10.0.3"
+        "newman": "^5.0.0",
+        "yargs": "^15.0.1"
     },
     "devDependencies": {
         "@0xproject/monorepo-scripts": "^0.1.18",
