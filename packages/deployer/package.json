@@ -77,7 +77,7 @@
         "@types/yargs": "^11.0.0",
         "chalk": "^2.3.0",
         "ethereumjs-util": "^5.1.1",
-        "isomorphic-fetch": "^2.2.1",
+        "isomorphic-fetch": "^3.0.0",
         "lodash": "^4.17.4",
         "require-from-string": "^2.0.1",
         "semver": "^5.5.0",
