@@ -54,7 +54,7 @@
         "publish-release": "0xproject/publish-release",
         "rimraf": "^2.6.2",
         "semver-diff": "^2.1.0",
-        "semver-sort": "0.0.4"
+        "semver-sort": "1.0.0"
     },
     "publishConfig": {
         "access": "public"
