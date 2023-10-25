@@ -73,7 +73,7 @@
         "@0xproject/types": "^0.6.1",
         "@0xproject/typescript-typings": "^0.2.0",
         "@0xproject/utils": "^0.5.2",
-        "@0xproject/web3-wrapper": "^0.6.1",
+        "@0xproject/web3-wrapper": "^1.0.0",
         "@types/yargs": "^11.0.0",
         "chalk": "^2.3.0",
         "ethereumjs-util": "^5.1.1",
@@ -82,7 +82,7 @@
         "require-from-string": "^2.0.1",
         "semver": "^5.5.0",
         "solc": "^0.4.23",
-        "web3": "^0.20.0",
+        "web3": "^1.2.0",
         "web3-eth-abi": "^1.0.0-beta.24",
         "yargs": "^10.0.3"
     },
