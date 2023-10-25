@@ -28,7 +28,7 @@
     },
     "dependencies": {
         "@0xproject/deployer": "^0.4.1",
-        "@0xproject/utils": "^0.5.2",
+        "@0xproject/utils": "^1.0.0",
         "@0xproject/web3-wrapper": "^0.6.1",
         "lodash": "^4.17.4"
     },
