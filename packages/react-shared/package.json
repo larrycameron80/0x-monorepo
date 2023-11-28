@@ -40,7 +40,7 @@
         "basscss": "^8.0.3",
         "is-mobile": "^0.2.2",
         "lodash": "^4.17.4",
-        "material-ui": "^0.17.1",
+        "material-ui": "^0.20.2",
         "react": "15.6.1",
         "react-dom": "15.6.1",
         "react-highlight": "0xproject/react-highlight",
