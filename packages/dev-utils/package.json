@@ -40,14 +40,14 @@
         "typescript": "2.7.1"
     },
     "dependencies": {
-        "@0xproject/sol-cov": "^0.0.8",
-        "@0xproject/subproviders": "^0.9.0",
+        "@0xproject/sol-cov": "^0.0.9",
+        "@0xproject/subproviders": "^0.10.0",
         "@0xproject/types": "^0.6.1",
         "@0xproject/typescript-typings": "^0.2.0",
         "@0xproject/web3-wrapper": "^0.6.1",
         "lodash": "^4.17.4",
         "web3": "^0.20.0",
-        "web3-provider-engine": "^14.0.4"
+        "web3-provider-engine": "^15.0.1"
     },
     "publishConfig": {
         "access": "public"
