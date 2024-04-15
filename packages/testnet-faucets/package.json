@@ -15,8 +15,8 @@
     "author": "Fabio Berger",
     "license": "Apache-2.0",
     "dependencies": {
-        "0x.js": "^0.36.3",
-        "@0xproject/subproviders": "^0.9.0",
+        "0x.js": "^1.0.1",
+        "@0xproject/subproviders": "^1.0.0",
         "@0xproject/typescript-typings": "^0.2.0",
         "@0xproject/utils": "^0.5.2",
         "body-parser": "^1.17.1",
