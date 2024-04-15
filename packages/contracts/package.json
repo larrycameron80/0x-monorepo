@@ -60,7 +60,7 @@
         "yargs": "^10.0.3"
     },
     "dependencies": {
-        "0x.js": "^0.36.3",
+        "0x.js": "^1.0.1",
         "@0xproject/deployer": "^0.4.1",
         "@0xproject/types": "^0.6.1",
         "@0xproject/typescript-typings": "^0.2.0",
