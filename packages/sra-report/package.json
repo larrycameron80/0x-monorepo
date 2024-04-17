@@ -28,15 +28,15 @@
     },
     "homepage": "https://github.com/0xProject/0x-monorepo/packages/sra-report/README.md",
     "dependencies": {
-        "0x.js": "^0.36.3",
+        "0x.js": "^1.0.1",
         "@0xproject/assert": "^0.2.7",
-        "@0xproject/connect": "^0.6.10",
+        "@0xproject/connect": "^2.0.0",
         "@0xproject/json-schemas": "^0.7.21",
         "@0xproject/typescript-typings": "^0.2.0",
         "@0xproject/utils": "^0.5.2",
         "chalk": "^2.3.0",
         "lodash": "^4.17.4",
-        "newman": "^3.9.3",
+        "newman": "^5.1.2",
         "yargs": "^10.0.3"
     },
     "devDependencies": {
