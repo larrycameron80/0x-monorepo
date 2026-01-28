@@ -97,7 +97,7 @@
         "webpack": "^3.1.0"
     },
     "dependencies": {
-        "@0xproject/assert": "^0.2.7",
+        "@0xproject/assert": "^1.0.0",
         "@0xproject/base-contract": "^0.2.1",
         "@0xproject/json-schemas": "^0.7.21",
         "@0xproject/types": "^0.6.1",
